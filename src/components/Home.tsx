@@ -1,148 +1,469 @@
-import { Card, CardContent } from "./ui/card";
-import { Button } from "./ui/button";
-import { 
-  Users, 
-  BarChart3, 
-  Settings, 
-  ClipboardCheck,
-  DollarSign,
-  LogOut,
+import { useEffect, useState } from "react";
+import {
+  Users,
+  CheckCircle2,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  CalendarDays,
   UserPlus,
-  Clock
+  Clock3,
+  ReceiptText,
+  XCircle,
 } from "lucide-react";
 
-interface HomeProps {
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
+type DashboardSummary = {
+  explorersCount: number;
+  monthlyAttendanceAverage: number;
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  upcomingMeetings: Array<{
+    id: string;
+    date: string;
+    type: string;
+  }>;
+  recentExplorers: Array<{
+    id: string;
+    nombre: string;
+    apellidos: string;
+    createdAt: string;
+  }>;
+  lastMeetingSummary: null | {
+    id: string;
+    date: string;
+    type: string;
+    total: number;
+    attended: number;
+    absent: number;
+    percent: number;
+  };
+  recentFinanceMovements: Array<{
+    id: string;
+    type: string;
+    amount: number;
+    category: string;
+    description: string;
+    date: string;
+  }>;
+};
+
+function formatMoney(value: number) {
+  return value.toLocaleString("es-SV", {
+    style: "currency",
+    currency: "USD",
+  });
 }
 
-const menuOptions = [
-  {
-    id: 1,
-    title: "Datos Personales",
-    description: "Registro y actualización de información",
-    icon: UserPlus,
-    color: "from-blue-500 to-blue-600",
-    page: "personal-data",
-  },
-  {
-    id: 2,
-    title: "Exploradores",
-    description: "Ver listado de exploradores",
-    icon: Users,
-    color: "from-green-500 to-green-600",
-    page: "explorers-list",
-  },
-  {
-    id: 3,
-    title: "Tomar Asistencia",
-    description: "Registrar asistencia de reunión",
-    icon: ClipboardCheck,
-    color: "from-purple-500 to-purple-600",
-    page: "attendance-taking",
-  },
-  {
-    id: 4,
-    title: "Ver Asistencia",
-    description: "Reporte de asistencia por reunión",
-    icon: BarChart3,
-    color: "from-orange-500 to-orange-600",
-    page: "attendance-report",
-  },
-  {
-    id: 5,
-    title: "Horario de Servicio",
-    description: "Gestión de grupos de servicio",
-    icon: Clock,
-    color: "from-indigo-500 to-indigo-600",
-    page: "service-schedule",
-  },
-  {
-    id: 6,
-    title: "Finanzas",
-    description: "Gestión de ingresos y gastos",
-    icon: DollarSign,
-    color: "from-emerald-500 to-emerald-600",
-    page: "finance-manager",
-  },
-  {
-    id: 7,
-    title: "Configuración",
-    description: "Ajustes de la aplicación",
-    icon: Settings,
-    color: "from-teal-500 to-teal-600",
-    page: "configuracion",
-  },
-];
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("es-SV", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
-export function Home({ onLogout, onNavigate }: HomeProps) {
-  const handleMenuClick = (page: string) => {
-    onNavigate(page);
+function getInitials(nombre: string, apellidos: string) {
+  return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
+}
+
+function getMovementTone(type: string) {
+  const normalized = String(type || "").toLowerCase();
+
+  if (
+    normalized === "entrada" ||
+    normalized === "income" ||
+    normalized === "ingreso"
+  ) {
+    return {
+      valueClass: "text-green-600",
+      iconClass: "text-green-500",
+      badgeClass: "text-green-600 bg-green-50",
+      label: "Entrada",
+    };
+  }
+
+  return {
+    valueClass: "text-red-600",
+    iconClass: "text-red-500",
+    badgeClass: "text-red-600 bg-red-50",
+    label: "Salida",
   };
+}
+
+export default function Home() {
+  const [loading, setLoading] = useState(true);
+
+  const [summary, setSummary] = useState<DashboardSummary>({
+    explorersCount: 0,
+    monthlyAttendanceAverage: 0,
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+    upcomingMeetings: [],
+    recentExplorers: [],
+    lastMeetingSummary: null,
+    recentFinanceMovements: [],
+  });
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch("http://localhost:4000/api/dashboard/summary", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token || ""}`,
+          },
+        });
+
+        const data = await res.json();
+
+        setSummary({
+          explorersCount: Number(data.explorersCount ?? 0),
+          monthlyAttendanceAverage: Number(data.monthlyAttendanceAverage ?? 0),
+          totalIncome: Number(data.totalIncome ?? 0),
+          totalExpense: Number(data.totalExpense ?? 0),
+          balance: Number(data.balance ?? 0),
+          upcomingMeetings: Array.isArray(data.upcomingMeetings) ? data.upcomingMeetings : [],
+          recentExplorers: Array.isArray(data.recentExplorers) ? data.recentExplorers : [],
+          lastMeetingSummary: data.lastMeetingSummary ?? null,
+          recentFinanceMovements: Array.isArray(data.recentFinanceMovements)
+            ? data.recentFinanceMovements
+            : [],
+        });
+      } catch (error) {
+        console.error("dashboard error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Exploradores
-              </h1>
-              <p className="text-xs text-muted-foreground">Panel de control</p>
+    <div className="space-y-10">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Dashboard
+        </h1>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Resumen general del club y actividad reciente
+        </p>
+      </div>
+
+      <section>
+        <div className="flex gap-6 overflow-x-auto pb-2">
+          <div className="min-w-[250px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Exploradores registrados</p>
+                <p className="mt-2 text-3xl font-semibold text-gray-900">
+                  {loading ? "..." : summary.explorersCount}
+                </p>
+              </div>
+
+              <Users className="h-6 w-6 text-gray-400" />
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onLogout}
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-              Salir
-            </Button>
+          </div>
+
+          <div className="min-w-[250px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Asistencia promedio mensual</p>
+
+                <p
+                  className={`mt-2 text-3xl font-semibold ${
+                    summary.monthlyAttendanceAverage >= 80
+                      ? "text-green-600"
+                      : summary.monthlyAttendanceAverage >= 50
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {loading ? "..." : `${summary.monthlyAttendanceAverage}%`}
+                </p>
+              </div>
+
+              <CheckCircle2 className="h-6 w-6 text-gray-400" />
+            </div>
+          </div>
+
+          <div className="min-w-[250px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Balance financiero</p>
+
+                <p
+                  className={`mt-2 text-3xl font-semibold ${
+                    summary.balance > 0
+                      ? "text-green-600"
+                      : summary.balance < 0
+                      ? "text-red-600"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {loading ? "..." : formatMoney(summary.balance)}
+                </p>
+              </div>
+
+              <Wallet className="h-6 w-6 text-gray-400" />
+            </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content */}
-      <main className="px-4 py-6 pb-safe">
-        <div className="mb-6">
-          <h2 className="text-xl mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            Bienvenido
+      <section>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+            Resumen financiero
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Selecciona una opción para continuar
-          </p>
+
+          <div className="ml-4 h-px flex-1 bg-gray-200"></div>
         </div>
 
-        {/* Menu Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {menuOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <Card
-                key={option.id}
-                className="cursor-pointer border"
-                onClick={() => handleMenuClick(option.page)}
-              >
-                <CardContent className="p-5">
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <div className={`bg-gradient-to-br ${option.color} w-14 h-14 rounded-2xl flex items-center justify-center`}>
-                      <Icon className="w-7 h-7 text-white" />
-                    </div>
+        <div className="flex gap-6 overflow-x-auto pb-2">
+          <div className="min-w-[260px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Entradas</p>
+              <TrendingUp className="h-5 w-5 text-green-500" />
+            </div>
+
+            <p className="mt-3 text-2xl font-semibold text-green-600">
+              {loading ? "..." : formatMoney(summary.totalIncome)}
+            </p>
+          </div>
+
+          <div className="min-w-[260px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Salidas</p>
+              <TrendingDown className="h-5 w-5 text-red-500" />
+            </div>
+
+            <p className="mt-3 text-2xl font-semibold text-red-600">
+              {loading ? "..." : formatMoney(summary.totalExpense)}
+            </p>
+          </div>
+
+          <div className="min-w-[260px] flex-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Balance actual</p>
+              <Wallet className="h-5 w-5 text-gray-500" />
+            </div>
+
+            <p
+              className={`mt-3 text-2xl font-semibold ${
+                summary.balance > 0
+                  ? "text-green-600"
+                  : summary.balance < 0
+                  ? "text-red-600"
+                  : "text-gray-700"
+              }`}
+            >
+              {loading ? "..." : formatMoney(summary.balance)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Próximas reuniones</h2>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-gray-500">Cargando...</p>
+            ) : summary.upcomingMeetings.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-sm text-gray-500">
+                No hay reuniones próximas registradas.
+              </div>
+            ) : (
+              summary.upcomingMeetings.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  className="rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm mb-1 font-medium">{option.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {option.description}
-                      </p>
+                      <p className="font-medium text-gray-900">{meeting.type}</p>
+                      <p className="mt-1 text-sm text-gray-500">{formatDate(meeting.date)}</p>
+                    </div>
+
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
+                      Próxima
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserPlus className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Exploradores recientes</h2>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-gray-500">Cargando...</p>
+            ) : summary.recentExplorers.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-sm text-gray-500">
+                No hay exploradores recientes.
+              </div>
+            ) : (
+              summary.recentExplorers.map((explorer) => (
+                <div
+                  key={explorer.id}
+                  className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
+                    {getInitials(explorer.nombre, explorer.apellidos)}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-gray-900">
+                      {explorer.nombre} {explorer.apellidos}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Agregado: {formatDate(explorer.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-3">
+            <Clock3 className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900">
+              Última asistencia registrada
+            </h2>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-500">Cargando...</p>
+          ) : !summary.lastMeetingSummary ? (
+            <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-sm text-gray-500">
+              No hay reuniones registradas.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-gray-200 px-4 py-4">
+                <p className="font-medium text-gray-900">
+                  {summary.lastMeetingSummary.type}
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {formatDate(summary.lastMeetingSummary.date)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-gray-200 px-4 py-4">
+                  <p className="text-sm text-gray-500">Presentes</p>
+                  <p className="mt-1 text-2xl font-semibold text-green-600">
+                    {summary.lastMeetingSummary.attended}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 px-4 py-4">
+                  <p className="text-sm text-gray-500">Ausentes</p>
+                  <p className="mt-1 text-2xl font-semibold text-red-600">
+                    {summary.lastMeetingSummary.absent}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 px-4 py-4">
+                  <p className="text-sm text-gray-500">Porcentaje</p>
+                  <p
+                    className={`mt-1 text-2xl font-semibold ${
+                      summary.lastMeetingSummary.percent >= 80
+                        ? "text-green-600"
+                        : summary.lastMeetingSummary.percent >= 50
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {summary.lastMeetingSummary.percent}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-3">
+            <ReceiptText className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900">Transacciones recientes</h2>
+          </div>
+
+          <div className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-gray-500">Cargando...</p>
+            ) : summary.recentFinanceMovements.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-sm text-gray-500">
+                No hay transacciones recientes.
+              </div>
+            ) : (
+              summary.recentFinanceMovements.map((movement) => {
+                const tone = getMovementTone(movement.type);
+
+                return (
+                  <div
+                    key={movement.id}
+                    className="rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${tone.badgeClass}`}
+                          >
+                            {tone.label}
+                          </span>
+                        </div>
+
+                        <p className="truncate font-medium text-gray-900">
+                          {movement.category}
+                        </p>
+
+                        <p className="mt-1 truncate text-sm text-gray-500">
+                          {movement.description || movement.type}
+                        </p>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <p className={`font-semibold ${tone.valueClass}`}>
+                          {formatMoney(movement.amount)}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {formatDate(movement.date)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                );
+              })
+            )}
+          </div>
         </div>
-      </main>
+      </section>
     </div>
   );
 }

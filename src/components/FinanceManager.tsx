@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -14,228 +15,374 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { 
-  ArrowLeft, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import {
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
   Wallet,
   Plus,
   Calendar as CalendarIcon,
   Filter,
   Upload,
-  X
+  X,
+  Pencil,
+  Trash2,
+  Receipt,
+  Search,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 
+type MovementType = "entrada" | "salida";
+
 interface Movement {
   id: string;
-  type: "entrada" | "salida";
+  type: MovementType;
   amount: number;
   category: string;
   description: string;
   date: string;
   recipient: string;
+  receiptUrl?: string | null;
+  createdAt?: string;
 }
-
-// Datos de ejemplo
-const mockMovements: Movement[] = [
-  {
-    id: "1",
-    type: "entrada",
-    amount: 5000,
-    category: "Donaciones",
-    description: "Ofrenda general del domingo",
-    date: "2025-10-15",
-    recipient: "Iglesia",
-  },
-  {
-    id: "2",
-    type: "salida",
-    amount: 1200,
-    category: "Material",
-    description: "Compra de material didáctico",
-    date: "2025-10-14",
-    recipient: "Proveedor",
-  },
-  {
-    id: "3",
-    type: "entrada",
-    amount: 3000,
-    category: "Eventos",
-    description: "Pago de campamento",
-    date: "2025-10-12",
-    recipient: "Organizador",
-  },
-  {
-    id: "4",
-    type: "salida",
-    amount: 800,
-    category: "Alimentos",
-    description: "Snacks para reunión",
-    date: "2025-10-10",
-    recipient: "Supermercado",
-  },
-  {
-    id: "5",
-    type: "entrada",
-    amount: 2500,
-    category: "Donaciones",
-    description: "Donación especial",
-    date: "2025-10-08",
-    recipient: "Donante",
-  },
-  {
-    id: "6",
-    type: "salida",
-    amount: 1500,
-    category: "Transporte",
-    description: "Renta de autobús",
-    date: "2025-10-05",
-    recipient: "Empresa de Transporte",
-  },
-  {
-    id: "7",
-    type: "entrada",
-    amount: 1800,
-    category: "Eventos",
-    description: "Inscripción retiro juvenil",
-    date: "2025-09-28",
-    recipient: "Participantes",
-  },
-  {
-    id: "8",
-    type: "salida",
-    amount: 950,
-    category: "Material",
-    description: "Biblia para nuevos miembros",
-    date: "2025-09-20",
-    recipient: "Librería",
-  },
-];
-
-const categories = [
-  "Donaciones",
-  "Eventos",
-  "Material",
-  "Alimentos",
-  "Transporte",
-  "Servicios",
-  "Otros",
-];
 
 interface FinanceManagerProps {
   onBack: () => void;
 }
 
+const incomeCategories = ["Donaciones", "Eventos", "Inscripciones", "Ofrendas", "Otros"];
+const expenseCategories = ["Material", "Alimentos", "Transporte", "Servicios", "Eventos", "Otros"];
+
+const initialForm = {
+  type: "entrada" as MovementType,
+  amount: "",
+  category: "",
+  description: "",
+  date: new Date().toISOString().split("T")[0],
+  recipient: "",
+};
+
 export function FinanceManager({ onBack }: FinanceManagerProps) {
-  const [movements, setMovements] = useState<Movement[]>(mockMovements);
-  const [filterType, setFilterType] = useState<"all" | "entrada" | "salida">("all");
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [filterType, setFilterType] = useState<"all" | MovementType>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState("");
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [reciboPreview, setReciboPreview] = useState<string | null>(null);
-  
-  // Form state
-  const [newMovement, setNewMovement] = useState({
-    type: "entrada" as "entrada" | "salida",
-    amount: "",
-    category: "",
-    description: "",
-    date: new Date().toISOString().split('T')[0],
-    recipient: "",
-  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedReceiptFile, setSelectedReceiptFile] = useState<File | null>(null);
+  const [selectedReceiptName, setSelectedReceiptName] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
 
-  // Filtrar movimientos por fecha y tipo
-  const filteredMovements = movements
-    .filter(m => filterType === "all" || m.type === filterType)
-    .filter(m => {
-      if (!startDate && !endDate) return true;
-      const movementDate = new Date(m.date);
-      const start = startDate ? new Date(startDate) : new Date("1900-01-01");
-      const end = endDate ? new Date(endDate) : new Date("2100-12-31");
-      return movementDate >= start && movementDate <= end;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Calcular balance (con filtros aplicados)
+  const [newMovement, setNewMovement] = useState(initialForm);
+
+  useEffect(() => {
+    loadMovements();
+  }, []);
+
+  async function loadMovements() {
+    try {
+      setLoading(true);
+      const data = await apiFetch("/api/finance");
+      setMovements(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudieron cargar los movimientos");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const availableCategories =
+    newMovement.type === "entrada" ? incomeCategories : expenseCategories;
+
+  const allCategories = Array.from(
+    new Set([...incomeCategories, ...expenseCategories])
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredMovements = useMemo(() => {
+    return movements
+      .filter((m) => filterType === "all" || m.type === filterType)
+      .filter((m) => filterCategory === "all" || m.category === filterCategory)
+      .filter((m) => {
+        if (!search.trim()) return true;
+        const term = search.toLowerCase();
+        return (
+          m.description.toLowerCase().includes(term) ||
+          m.recipient.toLowerCase().includes(term) ||
+          m.category.toLowerCase().includes(term)
+        );
+      })
+      .filter((m) => {
+        const movementDate = new Date(m.date);
+        movementDate.setHours(12, 0, 0, 0);
+
+        if (startDate) {
+          const from = new Date(startDate);
+          from.setHours(0, 0, 0, 0);
+          if (movementDate < from) return false;
+        }
+
+        if (endDate) {
+          const to = new Date(endDate);
+          to.setHours(23, 59, 59, 999);
+          if (movementDate > to) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [movements, filterType, filterCategory, search, startDate, endDate]);
+
   const totalEntradas = filteredMovements
-    .filter(m => m.type === "entrada")
-    .reduce((sum, m) => sum + m.amount, 0);
-  
+    .filter((m) => m.type === "entrada")
+    .reduce((sum, m) => sum + Number(m.amount), 0);
+
   const totalSalidas = filteredMovements
-    .filter(m => m.type === "salida")
-    .reduce((sum, m) => sum + m.amount, 0);
-  
+    .filter((m) => m.type === "salida")
+    .reduce((sum, m) => sum + Number(m.amount), 0);
+
   const balance = totalEntradas - totalSalidas;
 
-  const handleAddMovement = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const movement: Movement = {
-      id: Date.now().toString(),
-      type: newMovement.type,
-      amount: parseFloat(newMovement.amount),
-      category: newMovement.category,
-      description: newMovement.description,
-      date: newMovement.date,
-      recipient: newMovement.recipient,
-    };
-
-    setMovements([movement, ...movements]);
-    
-    // Reset form
-    setNewMovement({
-      type: "entrada",
-      amount: "",
-      category: "",
-      description: "",
-      date: new Date().toISOString().split('T')[0],
-      recipient: "",
+  const currentMonthStats = useMemo(() => {
+    const now = new Date();
+    const sameMonth = movements.filter((m) => {
+      const d = new Date(m.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
-    
-    setReciboPreview(null);
-    setIsDialogOpen(false);
-    toast.success("Movimiento agregado exitosamente");
-  };
 
-  const handleReciboChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReciboPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    const entradas = sameMonth
+      .filter((m) => m.type === "entrada")
+      .reduce((sum, m) => sum + Number(m.amount), 0);
 
-  const clearDateFilters = () => {
+    const salidas = sameMonth
+      .filter((m) => m.type === "salida")
+      .reduce((sum, m) => sum + Number(m.amount), 0);
+
+    return {
+      entradas,
+      salidas,
+      balance: entradas - salidas,
+    };
+  }, [movements]);
+
+  const expensesByCategory = useMemo(() => {
+    const map = new Map<string, number>();
+
+    filteredMovements
+      .filter((m) => m.type === "salida")
+      .forEach((m) => {
+        map.set(m.category, (map.get(m.category) || 0) + Number(m.amount));
+      });
+
+    return Array.from(map.entries())
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [filteredMovements]);
+
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat("es-SV", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  }
+
+  function formatDate(dateString: string) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-SV", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function resetForm() {
+    setNewMovement(initialForm);
+    setSelectedReceiptFile(null);
+    setSelectedReceiptName("");
+    setEditId(null);
+  }
+
+  function clearFilters() {
+    setFilterType("all");
+    setFilterCategory("all");
     setStartDate("");
     setEndDate("");
-  };
+    setSearch("");
+  }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(amount);
-  };
+  function openCreateDialog() {
+    resetForm();
+    setIsDialogOpen(true);
+  }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      day: 'numeric', 
-      month: 'short',
-      year: 'numeric'
+  function openEditDialog(movement: Movement) {
+    setEditId(movement.id);
+    setNewMovement({
+      type: movement.type,
+      amount: String(movement.amount),
+      category: movement.category,
+      description: movement.description,
+      date: movement.date.slice(0, 10),
+      recipient: movement.recipient,
     });
-  };
+    setSelectedReceiptFile(null);
+    setSelectedReceiptName(movement.receiptUrl ? "Recibo ya guardado" : "");
+    setIsDialogOpen(true);
+  }
+
+  async function uploadReceiptIfNeeded(): Promise<string | null> {
+    if (!selectedReceiptFile) return null;
+
+    const formData = new FormData();
+    formData.append("file", selectedReceiptFile);
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("http://localhost:4000/api/upload", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      let msg = "Error subiendo recibo";
+      try {
+        const err = await res.json();
+        msg = err.msg || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    return data.url || null;
+  }
+
+  async function handleSaveMovement(e: React.FormEvent) {
+    e.preventDefault();
+
+    const amount = Number(newMovement.amount);
+
+    if (!newMovement.category.trim()) {
+      toast.error("Selecciona una categoría");
+      return;
+    }
+
+    if (!newMovement.description.trim()) {
+      toast.error("Escribe una descripción");
+      return;
+    }
+
+    if (!newMovement.recipient.trim()) {
+      toast.error("Escribe el destinatario u origen");
+      return;
+    }
+
+    if (!newMovement.date) {
+      toast.error("Selecciona una fecha");
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("El monto debe ser mayor que 0");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      let receiptUrl: string | null | undefined = undefined;
+
+      if (selectedReceiptFile) {
+        receiptUrl = await uploadReceiptIfNeeded();
+      } else if (editId) {
+        const existing = movements.find((m) => m.id === editId);
+        receiptUrl = existing?.receiptUrl || null;
+      } else {
+        receiptUrl = null;
+      }
+
+      const payload = {
+        type: newMovement.type,
+        amount,
+        category: newMovement.category,
+        description: newMovement.description.trim(),
+        date: newMovement.date,
+        recipient: newMovement.recipient.trim(),
+        receiptUrl,
+      };
+
+      if (editId) {
+        await apiFetch(`/api/finance/${editId}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+        toast.success("Movimiento actualizado");
+      } else {
+        await apiFetch("/api/finance", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        toast.success("Movimiento agregado");
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      await loadMovements();
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Error guardando movimiento");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteMovement() {
+    if (!deleteId) return;
+
+    try {
+      await apiFetch(`/api/finance/${deleteId}`, {
+        method: "DELETE",
+      });
+
+      toast.success("Movimiento eliminado");
+      setDeleteId(null);
+      await loadMovements();
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo eliminar el movimiento");
+    }
+  }
+
+  const activeFilterCount =
+    (filterType !== "all" ? 1 : 0) +
+    (filterCategory !== "all" ? 1 : 0) +
+    (startDate ? 1 : 0) +
+    (endDate ? 1 : 0) +
+    (search.trim() ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
-      {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center space-x-2 flex-1 min-w-0">
               <Button variant="ghost" size="sm" onClick={onBack}>
                 <ArrowLeft className="w-4 h-4" />
@@ -244,276 +391,350 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                 <p className="text-base bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   Finanzas
                 </p>
-                <p className="text-xs text-muted-foreground">Gestión de ingresos y gastos</p>
+                <p className="text-xs text-muted-foreground">
+                  Gestión de ingresos y gastos
+                </p>
               </div>
             </div>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600"
+                  onClick={openCreateDialog}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo
+                </Button>
+              </DialogTrigger>
+
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>{editId ? "Editar movimiento" : "Nuevo movimiento"}</DialogTitle>
+                  <DialogDescription>
+                    Registra ingresos, gastos y recibos.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleSaveMovement} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tipo</Label>
+                    <Select
+                      value={newMovement.type}
+                      onValueChange={(value: MovementType) =>
+                        setNewMovement((prev) => ({
+                          ...prev,
+                          type: value,
+                          category: "",
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entrada">Entrada</SelectItem>
+                        <SelectItem value="salida">Salida</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Monto</Label>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={newMovement.amount}
+                        onChange={(e) =>
+                          setNewMovement((prev) => ({ ...prev, amount: e.target.value }))
+                        }
+                        placeholder="0.00"
+                        className="h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Categoría</Label>
+                      <Select
+                        value={newMovement.category}
+                        onValueChange={(value) =>
+                          setNewMovement((prev) => ({ ...prev, category: value }))
+                        }
+                      >
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Selecciona categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCategories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Descripción</Label>
+                    <Textarea
+                      value={newMovement.description}
+                      onChange={(e) =>
+                        setNewMovement((prev) => ({ ...prev, description: e.target.value }))
+                      }
+                      placeholder="Describe el movimiento"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Fecha</Label>
+                      <Input
+                        type="date"
+                        value={newMovement.date}
+                        onChange={(e) =>
+                          setNewMovement((prev) => ({ ...prev, date: e.target.value }))
+                        }
+                        className="h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>{newMovement.type === "entrada" ? "Origen" : "Destinatario"}</Label>
+                      <Input
+                        value={newMovement.recipient}
+                        onChange={(e) =>
+                          setNewMovement((prev) => ({ ...prev, recipient: e.target.value }))
+                        }
+                        placeholder={newMovement.type === "entrada" ? "Ej. Donante" : "Ej. Librería"}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Recibo</Label>
+                    <label className="flex items-center justify-center gap-2 border rounded-md h-11 cursor-pointer px-3">
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm truncate">
+                        {selectedReceiptName || "Subir recibo"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setSelectedReceiptFile(file);
+                          setSelectedReceiptName(file?.name || "");
+                        }}
+                      />
+                    </label>
+
+                    {selectedReceiptName ? (
+                      <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+                        <span className="text-xs truncate">{selectedReceiptName}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedReceiptFile(null);
+                            setSelectedReceiptName("");
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        resetForm();
+                      }}
+                      disabled={isSaving}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Guardando..." : editId ? "Actualizar" : "Guardar"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-5 pb-safe">
-        {/* Balance Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <Card className="border">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-2">
-                  <TrendingUp className="w-5 h-5 text-white" />
+      <main className="px-4 py-5 pb-safe space-y-4">
+        <Card className="border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Resumen general</CardTitle>
+            <CardDescription className="text-xs">
+              Totales según los filtros actuales
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Entradas</p>
+                    <p className="text-lg font-semibold text-green-600">
+                      {formatCurrency(totalEntradas)}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">Entradas</p>
-                <p className="text-sm text-green-600 font-medium">{formatCurrency(totalEntradas)}</p>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="border">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-2">
-                  <TrendingDown className="w-5 h-5 text-white" />
+              <div className="rounded-xl border bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Salidas</p>
+                    <p className="text-lg font-semibold text-red-600">
+                      {formatCurrency(totalSalidas)}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                    <TrendingDown className="w-5 h-5 text-red-600" />
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">Salidas</p>
-                <p className="text-sm text-red-600 font-medium">{formatCurrency(totalSalidas)}</p>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="border">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <div className={`w-10 h-10 bg-gradient-to-br ${balance >= 0 ? 'from-blue-500 to-blue-600' : 'from-orange-500 to-orange-600'} rounded-xl flex items-center justify-center mb-2`}>
-                  <Wallet className="w-5 h-5 text-white" />
+              <div className="rounded-xl border bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Balance general</p>
+                    <p className={`text-lg font-semibold ${balance >= 0 ? "text-slate-900" : "text-red-700"}`}>
+                      {formatCurrency(balance)}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-slate-700" />
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">Balance</p>
-                <p className={`text-sm font-medium ${balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  {formatCurrency(balance)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Resumen del mes</CardTitle>
+            <CardDescription className="text-xs">
+              Vista rápida del mes actual
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+                <p className="text-xs text-muted-foreground">Entradas mes</p>
+                <p className="text-lg font-semibold text-green-600">
+                  {formatCurrency(currentMonthStats.entradas)}
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mb-5">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-teal-600">
-                <Plus className="w-5 h-5 mr-2" />
-                Agregar Movimiento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Nuevo Movimiento</DialogTitle>
-                <DialogDescription className="text-xs">
-                  Registra un ingreso o gasto
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddMovement} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type" className="text-sm">Tipo *</Label>
-                  <Select
-                    value={newMovement.type}
-                    onValueChange={(value: "entrada" | "salida") =>
-                      setNewMovement({ ...newMovement, type: value })
-                    }
-                  >
-                    <SelectTrigger id="type" className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entrada">Entrada (Ingreso)</SelectItem>
-                      <SelectItem value="salida">Salida (Gasto)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+                <p className="text-xs text-muted-foreground">Salidas mes</p>
+                <p className="text-lg font-semibold text-red-600">
+                  {formatCurrency(currentMonthStats.salidas)}
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="amount" className="text-sm">Cantidad *</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newMovement.amount}
-                    onChange={(e) =>
-                      setNewMovement({ ...newMovement, amount: e.target.value })
-                    }
-                    required
-                    className="h-11"
-                  />
-                </div>
+              <div className="rounded-xl border bg-slate-50 p-4">
+                <p className="text-xs text-muted-foreground">Balance mes</p>
+                <p className={`text-lg font-semibold ${currentMonthStats.balance >= 0 ? "text-slate-900" : "text-red-700"}`}>
+                  {formatCurrency(currentMonthStats.balance)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm">Categoría *</Label>
-                  <Select
-                    value={newMovement.category}
-                    onValueChange={(value) =>
-                      setNewMovement({ ...newMovement, category: value })
-                    }
-                  >
-                    <SelectTrigger id="category" className="h-11">
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="date" className="text-sm">Fecha *</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={newMovement.date}
-                    onChange={(e) =>
-                      setNewMovement({ ...newMovement, date: e.target.value })
-                    }
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm">Descripción *</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe el movimiento"
-                    value={newMovement.description}
-                    onChange={(e) =>
-                      setNewMovement({ ...newMovement, description: e.target.value })
-                    }
-                    required
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="recipient" className="text-sm">Destinatario/Origen *</Label>
-                  <Input
-                    id="recipient"
-                    placeholder="Nombre del destinatario/origen"
-                    value={newMovement.recipient}
-                    onChange={(e) =>
-                      setNewMovement({ ...newMovement, recipient: e.target.value })
-                    }
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="recibo" className="text-sm">Recibo (Opcional)</Label>
-                  <Input
-                    id="recibo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleReciboChange}
-                    className="h-11"
-                  />
-                </div>
-
-                {reciboPreview && (
-                  <div className="space-y-2">
-                    <Label className="text-sm">Vista Previa del Recibo</Label>
-                    <img
-                      src={reciboPreview}
-                      alt="Recibo"
-                      className="w-full h-40 object-cover rounded-lg"
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="flex-1 h-11"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-1 h-11">
-                    Guardar
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Filtros de Tipo */}
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={filterType === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("all")}
-            className="flex-1 h-10"
-          >
-            <Filter className="w-4 h-4 mr-1" />
-            Todos
-          </Button>
-          <Button
-            variant={filterType === "entrada" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("entrada")}
-            className="flex-1 h-10"
-          >
-            Entradas
-          </Button>
-          <Button
-            variant={filterType === "salida" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("salida")}
-            className="flex-1 h-10"
-          >
-            Salidas
-          </Button>
-        </div>
-
-        {/* Filtros de Fecha */}
-        <Card className="border mb-4">
+        <Card className="border">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between text-base">
-              <span className="flex items-center">
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                Filtrar por Fecha
-              </span>
-              {(startDate || endDate) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearDateFilters}
-                  className="h-8 text-xs"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Limpiar
-                </Button>
-              )}
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filtros
             </CardTitle>
           </CardHeader>
+
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="startDate" className="text-xs">Fecha Inicio</Label>
+            <div className="space-y-2">
+              <Label className="text-xs">Buscar</Label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="startDate"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por descripción, categoría o destinatario"
+                  className="pl-9 h-10"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs">Tipo</Label>
+                <Select value={filterType} onValueChange={(value: "all" | MovementType) => setFilterType(value)}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="entrada">Entradas</SelectItem>
+                    <SelectItem value="salida">Salidas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Categoría</Label>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {allCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Desde</Label>
+                <Input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="h-10"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="endDate" className="text-xs">Fecha Fin</Label>
+                <Label className="text-xs">Hasta</Label>
                 <Input
-                  id="endDate"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
@@ -521,33 +742,45 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                 />
               </div>
             </div>
-            {(startDate || endDate) && (
-              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded-md">
-                {filteredMovements.length} movimiento(s) encontrado(s)
-              </div>
-            )}
+
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-xs text-muted-foreground">
+                {filteredMovements.length} movimiento(s) · {activeFilterCount} filtro(s)
+              </p>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Limpiar
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Lista de Movimientos */}
         <Card className="border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Movimientos Recientes</CardTitle>
+            <CardTitle className="text-base">Movimientos</CardTitle>
           </CardHeader>
+
           <CardContent className="p-0">
-            <div className="divide-y">
-              {filteredMovements.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    No hay movimientos para mostrar
-                  </p>
-                </div>
-              ) : (
-                filteredMovements.map((movement) => (
+            {loading ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Cargando movimientos...
+              </div>
+            ) : filteredMovements.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Aún no hay movimientos para mostrar
+                </p>
+                <Button variant="outline" onClick={openCreateDialog}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar movimiento
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {filteredMovements.map((movement) => (
                   <div key={movement.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <Badge
                             variant="secondary"
                             className={
@@ -558,41 +791,116 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                           >
                             {movement.type === "entrada" ? "Entrada" : "Salida"}
                           </Badge>
+
                           <Badge variant="outline" className="text-xs">
                             {movement.category}
                           </Badge>
+
+                          {movement.receiptUrl ? (
+                            <Badge variant="outline" className="text-xs">
+                              <Receipt className="w-3 h-3 mr-1" />
+                              Recibo
+                            </Badge>
+                          ) : null}
                         </div>
+
                         <p className="text-sm mb-1 break-words font-medium">
                           {movement.description}
                         </p>
+
                         <p className="text-xs text-muted-foreground mb-1">
                           {movement.recipient}
                         </p>
+
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <CalendarIcon className="w-3 h-3" />
                           <span>{formatDate(movement.date)}</span>
                         </div>
+
+                        {movement.receiptUrl ? (
+                          <div className="mt-3">
+                            <a
+                              href={`http://localhost:4000${movement.receiptUrl}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center text-xs text-emerald-700 hover:underline"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Ver recibo
+                            </a>
+                          </div>
+                        ) : null}
                       </div>
+
                       <div className="text-right flex-shrink-0">
                         <p
                           className={`text-base font-medium ${
-                            movement.type === "entrada"
-                              ? "text-green-600"
-                              : "text-red-600"
+                            movement.type === "entrada" ? "text-green-600" : "text-red-600"
                           }`}
                         >
                           {movement.type === "entrada" ? "+" : "-"}
-                          {formatCurrency(movement.amount)}
+                          {formatCurrency(Number(movement.amount))}
                         </p>
+
+                        <div className="flex items-center justify-end gap-1 mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(movement)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteId(movement.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {expensesByCategory.length > 0 && (
+          <Card className="border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Gastos por categoría</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {expensesByCategory.map((item) => (
+                <div key={item.category} className="flex items-center justify-between text-sm">
+                  <span>{item.category}</span>
+                  <span className="font-medium">{formatCurrency(item.amount)}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </main>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar movimiento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMovement}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

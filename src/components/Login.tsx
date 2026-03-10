@@ -1,42 +1,66 @@
 import { useState } from "react";
+import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { LogIn, Users } from "lucide-react";
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (token: string) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulación de login - en producción aquí iría la autenticación real
-    if (email && password) {
-      onLogin();
+    setLoading(true);
+
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      localStorage.setItem("token", data.token);
+      onLogin(data.token);
+    } catch (err) {
+      localStorage.removeItem("token");
+      alert("Credenciales incorrectas");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <Card className="w-full max-w-md border">
         <CardHeader className="space-y-1 pb-6">
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
-              <Users className="w-8 h-8 text-white" />
+          <div className="mb-6 flex items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600">
+              <Users className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-center text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+
+          <CardTitle className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-center text-2xl text-transparent">
             Bienvenido
           </CardTitle>
+
           <CardDescription className="text-center">
             Sistema de Gestión de Exploradores
           </CardDescription>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-5">
             <div className="space-y-2">
@@ -49,8 +73,10 @@ export function Login({ onLogin }: LoginProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-11"
+                disabled={loading}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <Input
@@ -61,18 +87,22 @@ export function Login({ onLogin }: LoginProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="h-11"
+                disabled={loading}
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4 pt-2">
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600"
+            <Button
+              type="submit"
+              className="h-11 w-full bg-gradient-to-r from-indigo-600 to-purple-600"
+              disabled={loading}
             >
-              <LogIn className="w-4 h-4 mr-2" />
-              Iniciar sesión
+              <LogIn className="mr-2 h-4 w-4" />
+              {loading ? "Validando..." : "Iniciar sesión"}
             </Button>
-            <p className="text-sm text-center text-muted-foreground">
+
+            <p className="text-center text-sm text-muted-foreground">
               ¿Olvidaste tu contraseña?{" "}
               <a href="#" className="text-indigo-600">
                 Recuperar

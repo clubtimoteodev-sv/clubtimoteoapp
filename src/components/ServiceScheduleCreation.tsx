@@ -1,364 +1,489 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Users,
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-
-interface ServiceScheduleCreationProps {
-  onBack: () => void;
-  onNavigate: (page: string) => void;
-}
+import { Badge } from "./ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import { ArrowLeft, Plus, Trash2, Pencil, CalendarDays, Users } from "lucide-react";
+import { toast } from "sonner@2.0.3";
 
 interface Explorer {
   id: string;
-  code: string;
-  name: string;
+  nombre: string;
+  apellidos: string;
+  fotoUrl?: string | null;
 }
 
-interface ServiceGroup {
+interface ServiceGroupMemberApi {
+  id: string;
+  explorerId: string;
+  explorer: Explorer;
+}
+
+interface ServiceGroupApi {
   id: string;
   date: string;
   day: string;
-  members: string[];
   createdAt: string;
+  members: ServiceGroupMemberApi[];
 }
 
-// Datos mock de exploradores (mismos que en ExplorersList)
-const mockExplorers = [
-  {
-    id: "1",
-    nombre: "Juan Carlos",
-    apellidos: "Pérez García",
-    codigoExplorador: "001-001",
-  },
-  {
-    id: "2",
-    nombre: "Ana Sofía",
-    apellidos: "Martínez López",
-    codigoExplorador: "001-002",
-  },
-  {
-    id: "3",
-    nombre: "Diego Alejandro",
-    apellidos: "Rodríguez Hernández",
-    codigoExplorador: "001-003",
-  },
-  {
-    id: "4",
-    nombre: "María Fernanda",
-    apellidos: "González Ruiz",
-    codigoExplorador: "001-004",
-  },
-  {
-    id: "5",
-    nombre: "Luis Eduardo",
-    apellidos: "Sánchez Torres",
-    codigoExplorador: "001-005",
-  },
-];
+interface ServiceScheduleCreationProps {
+  onBack: () => void;
+}
 
-export function ServiceScheduleCreation({ onBack, onNavigate }: ServiceScheduleCreationProps) {
-  const [date, setDate] = useState("");
-  const [day, setDay] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [serviceGroups, setServiceGroups] = useState<ServiceGroup[]>(() => {
-    const stored = localStorage.getItem("serviceGroups");
-    return stored ? JSON.parse(stored) : [];
-  });
+const initialForm = {
+  date: new Date().toISOString().split("T")[0],
+  day: "",
+};
 
-  // Obtener exploradores del localStorage o usar mock
-  const explorers: Explorer[] = (() => {
-    const stored = localStorage.getItem("explorers");
-    let data = [];
-    
-    if (stored) {
-      try {
-        data = JSON.parse(stored);
-      } catch (e) {
-        data = mockExplorers;
-      }
-    } else {
-      data = mockExplorers;
+export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps) {
+  const [explorers, setExplorers] = useState<Explorer[]>([]);
+  const [groups, setGroups] = useState<ServiceGroupApi[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [form, setForm] = useState(initialForm);
+  const [selectedMembers, setSelectedMembers] = useState<Record<string, boolean>>({});
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  async function loadAll() {
+    try {
+      setLoading(true);
+
+      const [explorersData, groupsData] = await Promise.all([
+        apiFetch("/api/explorers"),
+        apiFetch("/api/service-groups"),
+      ]);
+
+      setExplorers(explorersData);
+      setGroups(groupsData);
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudieron cargar los datos");
+    } finally {
+      setLoading(false);
     }
-    
-    return data.map((explorer: any) => ({
-      id: explorer.id,
-      code: explorer.codigoExplorador || explorer.code || "000-000",
-      name: `${explorer.nombre} ${explorer.apellidos}`,
+  }
+
+  const selectedMemberIds = useMemo(
+    () =>
+      Object.entries(selectedMembers)
+        .filter(([, checked]) => checked)
+        .map(([id]) => id),
+    [selectedMembers]
+  );
+
+  function getInitials(nombre: string, apellidos: string) {
+    return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
+  }
+
+  function resetForm() {
+    setForm(initialForm);
+    setSelectedMembers({});
+    setEditId(null);
+  }
+
+  function openCreateDialog() {
+    resetForm();
+    setIsDialogOpen(true);
+  }
+
+  function openEditDialog(group: ServiceGroupApi) {
+    const membersMap: Record<string, boolean> = {};
+
+    group.members.forEach((member) => {
+      membersMap[member.explorerId] = true;
+    });
+
+    setEditId(group.id);
+    setForm({
+      date: group.date.slice(0, 10),
+      day: group.day,
+    });
+    setSelectedMembers(membersMap);
+    setIsDialogOpen(true);
+  }
+
+  function toggleMember(explorerId: string, checked: boolean) {
+    setSelectedMembers((prev) => ({
+      ...prev,
+      [explorerId]: checked,
     }));
-  })();
+  }
 
-  const handleToggleMember = (explorerId: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(explorerId)
-        ? prev.filter((id) => id !== explorerId)
-        : [...prev, explorerId]
-    );
-  };
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
 
-  const handleSelectAll = () => {
-    if (selectedMembers.length === explorers.length) {
-      setSelectedMembers([]);
-    } else {
-      setSelectedMembers(explorers.map((e) => e.id));
-    }
-  };
-
-  const handleCreateGroup = () => {
-    if (!date || !day) {
-      toast.error("Por favor completa todos los campos obligatorios");
+    if (!form.day.trim()) {
+      toast.error("Escribe el día o nombre del servicio");
       return;
     }
 
-    if (selectedMembers.length === 0) {
-      toast.error("Debes seleccionar al menos un explorador");
+    if (!form.date) {
+      toast.error("Selecciona una fecha");
       return;
     }
 
-    const newGroup: ServiceGroup = {
-      id: Date.now().toString(),
-      date,
-      day,
-      members: selectedMembers,
-      createdAt: new Date().toISOString(),
-    };
+    if (selectedMemberIds.length === 0) {
+      toast.error("Selecciona al menos un explorador");
+      return;
+    }
 
-    const updatedGroups = [...serviceGroups, newGroup];
-    setServiceGroups(updatedGroups);
-    localStorage.setItem("serviceGroups", JSON.stringify(updatedGroups));
+    try {
+      setIsSaving(true);
 
-    toast.success("Grupo de servicio creado exitosamente");
+      const payload = {
+        date: form.date,
+        day: form.day.trim(),
+        memberIds: selectedMemberIds,
+      };
 
-    // Limpiar formulario
-    setDate("");
-    setDay("");
-    setSelectedMembers([]);
-    setIsFormOpen(false);
-  };
+      if (editId) {
+        await apiFetch(`/api/service-groups/${editId}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+        toast.success("Grupo actualizado");
+      } else {
+        await apiFetch("/api/service-groups", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        toast.success("Grupo creado");
+      }
 
-  const handleDeleteGroup = (groupId: string) => {
-    const updatedGroups = serviceGroups.filter((g) => g.id !== groupId);
-    setServiceGroups(updatedGroups);
-    localStorage.setItem("serviceGroups", JSON.stringify(updatedGroups));
-    toast.success("Grupo eliminado");
-  };
+      setIsDialogOpen(false);
+      resetForm();
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo guardar el grupo");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+
+    try {
+      await apiFetch(`/api/service-groups/${deleteId}`, {
+        method: "DELETE",
+      });
+
+      toast.success("Grupo eliminado");
+      setDeleteId(null);
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo eliminar el grupo");
+    }
+  }
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("es-SV", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      {/* Header Sticky */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50">
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={onBack}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2 min-w-0">
+              <Button variant="ghost" size="sm" onClick={onBack} className="!text-slate-700">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
-                <h1 className="text-lg bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Horario de Servicio
-                </h1>
-                <p className="text-xs text-muted-foreground">Crear grupos de servicio</p>
+                <p className="text-base bg-gradient-to-r from-cyan-600 to-sky-600 bg-clip-text text">
+                  Creación de Servicio
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Crea grupos y asigna exploradores
+                </p>
               </div>
             </div>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700 border-0 shadow-sm"
+                  onClick={openCreateDialog}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo
+                </Button>
+              </DialogTrigger>
+
+              <DialogContent className="max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>{editId ? "Editar grupo" : "Nuevo grupo de servicio"}</DialogTitle>
+                  <DialogDescription>
+                    Selecciona fecha, nombre del servicio y miembros.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleSave} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Fecha</Label>
+                      <Input
+                        type="date"
+                        value={form.date}
+                        onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                        className="h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Día / Nombre</Label>
+                      <Input
+                        value={form.day}
+                        onChange={(e) => setForm((prev) => ({ ...prev, day: e.target.value }))}
+                        placeholder="Ej. Domingo, Sábado AM, Servicio especial"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Exploradores</Label>
+                      <Badge variant="outline" className="text-xs">
+                        Seleccionados: {selectedMemberIds.length}
+                      </Badge>
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto border rounded-xl bg-white">
+                      {explorers.length === 0 ? (
+                        <div className="p-4">
+                          <p className="text-sm text-muted-foreground">
+                            No hay exploradores registrados.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {explorers.map((explorer) => {
+                            const checked = selectedMembers[explorer.id] || false;
+
+                            return (
+                              <label
+                                key={explorer.id}
+                                className="flex items-center justify-between gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                                    {getInitials(explorer.nombre, explorer.apellidos)}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {explorer.nombre} {explorer.apellidos}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      Explorador
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(value) =>
+                                    toggleMember(explorer.id, value === true)
+                                  }
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 !text-slate-700"
+                      disabled={isSaving}
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        resetForm();
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      className="flex-1 !text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700 disabled:opacity-60 border-0 shadow-sm"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Guardando..." : editId ? "Actualizar" : "Guardar"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-6 pb-safe">
-        {/* Botones de navegación */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <Button
-            variant="outline"
-            className="h-auto py-4"
-            onClick={() => onNavigate("service-schedule-attendance")}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Clock className="w-5 h-5" />
-              <span className="text-xs">Tomar Asistencia</span>
-            </div>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-4"
-            onClick={() => onNavigate("service-schedule-report")}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              <span className="text-xs">Ver Historial</span>
-            </div>
-          </Button>
-        </div>
-
-        {/* Formulario de Creación */}
-        <Collapsible open={isFormOpen} onOpenChange={setIsFormOpen} className="mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full h-14 justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <Plus className="w-5 h-5" />
-                    <span>Crear Nuevo Grupo de Servicio</span>
-                  </div>
-                  {isFormOpen ? (
-                    <ChevronUp className="w-5 h-5" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent className="mt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Fecha</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="day">Día</Label>
-                    <Input
-                      id="day"
-                      type="text"
-                      placeholder="Ej: Domingo"
-                      value={day}
-                      onChange={(e) => setDay(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Selección de Exploradores */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>Seleccionar Exploradores ({selectedMembers.length})</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSelectAll}
-                    >
-                      {selectedMembers.length === explorers.length ? "Deseleccionar" : "Seleccionar"} Todos
-                    </Button>
-                  </div>
-
-                  <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
-                    {explorers.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No hay exploradores registrados
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {explorers.map((explorer) => (
-                          <div
-                            key={explorer.id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50"
-                          >
-                            <Checkbox
-                              id={`explorer-${explorer.id}`}
-                              checked={selectedMembers.includes(explorer.id)}
-                              onCheckedChange={() => handleToggleMember(explorer.id)}
-                            />
-                            <label
-                              htmlFor={`explorer-${explorer.id}`}
-                              className="flex-1 cursor-pointer"
-                            >
-                              <p className="text-sm">{explorer.name}</p>
-                              <p className="text-xs text-muted-foreground">{explorer.code}</p>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-                  onClick={handleCreateGroup}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Crear Grupo de Servicio
-                </Button>
-              </CollapsibleContent>
+      <main className="px-4 py-5 pb-safe space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Grupos</p>
+                <p className="text-xl font-semibold">{groups.length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center">
+                <CalendarDays className="w-5 h-5 text-cyan-700" />
+              </div>
             </CardContent>
           </Card>
-        </Collapsible>
 
-        {/* Lista de Grupos Creados */}
-        <div className="space-y-3">
-          <h2 className="text-base">Grupos Programados ({serviceGroups.length})</h2>
+          <Card className="border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Exploradores</p>
+                <p className="text-xl font-semibold">{explorers.length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-sky-700" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {serviceGroups.length === 0 ? (
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground text-center">
-                  No hay grupos de servicio creados
+        <Card className="border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Grupos creados</CardTitle>
+            <CardDescription className="text-xs">
+              Administra los grupos de servicio
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Cargando grupos...
+              </div>
+            ) : groups.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Aún no hay grupos creados
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
-            serviceGroups
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((group) => (
-                <Card key={group.id}>
-                  <CardContent className="p-4">
+                <Button
+                  variant="outline"
+                  onClick={openCreateDialog}
+                  className="!text-slate-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear grupo
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {groups.map((group) => (
+                  <div key={group.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="w-4 h-4 text-purple-600" />
-                          <p className="text-sm">
-                            {new Date(group.date).toLocaleDateString("es-ES", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="bg-cyan-100 text-cyan-800">
+                            {group.day}
+                          </Badge>
+                          <Badge variant="outline">{formatDate(group.date)}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {group.members.length} miembros
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-indigo-600" />
-                          <p className="text-sm">{group.day}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-green-600" />
-                          <p className="text-sm">{group.members.length} exploradores</p>
+
+                        <div className="flex flex-wrap gap-2">
+                          {group.members.map((member) => (
+                            <Badge key={member.id} variant="outline" className="text-xs">
+                              {member.explorer.nombre} {member.explorer.apellidos}
+                            </Badge>
+                          ))}
                         </div>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteGroup(group.id)}
-                      >
-                        Eliminar
-                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(group)}
+                          className="!text-slate-700"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteId(group.id)}
+                          className="!text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-          )}
-        </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar grupo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará el grupo y sus miembros asociados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

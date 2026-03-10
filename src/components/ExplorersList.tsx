@@ -1,106 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent } from "./ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { ArrowLeft, Search, UserPlus, Eye } from "lucide-react";
+import { ArrowLeft, Search, UserPlus, Eye, FileText } from "lucide-react";
 
 interface Explorer {
   id: string;
+  codigoExplorador?: string | null;
   nombre: string;
   apellidos: string;
   fechaNacimiento: string;
   telefono: string;
   direccion: string;
-  alergias?: string;
-  medicinaControlada?: string;
-  foto?: string;
+  alergias?: string | null;
+  medicinaControlada?: string | null;
+  foto?: string | null;
+  fotoUrl?: string | null;
+  recetaUrl?: string | null;
+  permisoUrl?: string | null;
   nombreResponsable: string;
   telefonoResponsable: string;
   aceptoCristo: boolean;
   bautizado: boolean;
   asisteCelula: boolean;
-  nombreLiderCelula?: string;
+  nombreLiderCelula?: string | null;
 }
-
-// Datos de ejemplo
-const mockExplorers: Explorer[] = [
-  {
-    id: "1",
-    nombre: "Juan Carlos",
-    apellidos: "Pérez García",
-    fechaNacimiento: "2010-05-15",
-    telefono: "+1 (555) 123-4567",
-    direccion: "Calle Principal 123, Ciudad de México",
-    alergias: "Alergia al polen",
-    medicinaControlada: "Ninguna",
-    nombreResponsable: "María García",
-    telefonoResponsable: "+1 (555) 123-4568",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: true,
-    nombreLiderCelula: "Pastor Roberto Sánchez",
-  },
-  {
-    id: "2",
-    nombre: "Ana Sofía",
-    apellidos: "Martínez López",
-    fechaNacimiento: "2011-08-22",
-    telefono: "+1 (555) 234-5678",
-    direccion: "Avenida Reforma 456, Guadalajara",
-    alergias: "Alergia a frutos secos",
-    nombreResponsable: "Carlos Martínez",
-    telefonoResponsable: "+1 (555) 234-5679",
-    aceptoCristo: true,
-    bautizado: false,
-    asisteCelula: true,
-    nombreLiderCelula: "Hermana Laura González",
-  },
-  {
-    id: "3",
-    nombre: "Diego Alejandro",
-    apellidos: "Rodríguez Hernández",
-    fechaNacimiento: "2012-03-10",
-    telefono: "+1 (555) 345-6789",
-    direccion: "Boulevard Central 789, Monterrey",
-    medicinaControlada: "Inhalador para asma",
-    nombreResponsable: "Patricia Hernández",
-    telefonoResponsable: "+1 (555) 345-6790",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: false,
-  },
-  {
-    id: "4",
-    nombre: "María Fernanda",
-    apellidos: "González Ruiz",
-    fechaNacimiento: "2010-11-30",
-    telefono: "+1 (555) 456-7890",
-    direccion: "Calle Juárez 321, Puebla",
-    nombreResponsable: "Fernando González",
-    telefonoResponsable: "+1 (555) 456-7891",
-    aceptoCristo: false,
-    bautizado: false,
-    asisteCelula: true,
-    nombreLiderCelula: "Pastor Miguel Ángel",
-  },
-  {
-    id: "5",
-    nombre: "Luis Eduardo",
-    apellidos: "Sánchez Torres",
-    fechaNacimiento: "2011-07-18",
-    telefono: "+1 (555) 567-8901",
-    direccion: "Avenida Hidalgo 654, Querétaro",
-    alergias: "Intolerancia a la lactosa",
-    nombreResponsable: "Elena Torres",
-    telefonoResponsable: "+1 (555) 567-8902",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: true,
-    nombreLiderCelula: "Hermano José Luis",
-  },
-];
 
 interface ExplorersListProps {
   onBack: () => void;
@@ -110,11 +37,39 @@ interface ExplorersListProps {
 
 export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [explorers] = useState<Explorer[]>(mockExplorers);
+  const [explorers, setExplorers] = useState<Explorer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadExplorers() {
+      try {
+        const data = await apiFetch("/api/explorers");
+        setExplorers(data);
+      } catch (err) {
+        console.error("Error loading explorers:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadExplorers();
+  }, []);
 
   const filteredExplorers = explorers.filter((explorer) => {
-    const fullName = `${explorer.nombre} ${explorer.apellidos}`.toLowerCase();
-    return fullName.includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase().trim();
+
+    const haystack = [
+      explorer.codigoExplorador || "",
+      explorer.nombre || "",
+      explorer.apellidos || "",
+      `${explorer.nombre} ${explorer.apellidos}`,
+      explorer.nombreResponsable || "",
+      explorer.telefono || "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(term);
   });
 
   const calculateAge = (birthDate: string) => {
@@ -122,131 +77,196 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
+
     return age;
   };
 
   const getInitials = (nombre: string, apellidos: string) => {
-    return `${nombre.charAt(0)}${apellidos.charAt(0)}`.toUpperCase();
+    return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
   };
 
+  const getPhotoSrc = (explorer: Explorer) => {
+    const raw = explorer.fotoUrl || explorer.foto || null;
+    if (!raw) return undefined;
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+    return `http://localhost:4000${raw}`;
+  };
+
+  const getDocumentsStatus = (explorer: Explorer) => {
+    const hasFoto = Boolean(explorer.fotoUrl || explorer.foto);
+    const hasReceta = Boolean(explorer.recetaUrl);
+    const hasPermiso = Boolean(explorer.permisoUrl);
+
+    const total = [hasFoto, hasReceta, hasPermiso].filter(Boolean).length;
+
+    if (total === 3) {
+      return {
+        label: "Docs completos",
+        className: "bg-green-100 text-green-800 border-0",
+      };
+    }
+
+    if (total >= 1) {
+      return {
+        label: `Faltan ${3 - total}`,
+        className: "bg-amber-100 text-amber-800 border-0",
+      };
+    }
+
+    return {
+      label: "Sin documentos",
+      className: "bg-red-100 text-red-800 border-0",
+    };
+  };
+
+  if (loading) {
+    return <div className="p-6">Cargando exploradores...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center space-x-2 flex-1 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center space-x-2">
               <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
+
               <div className="min-w-0">
-                <p className="text-base bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent truncate">
+                <p className="truncate text-base font-semibold text-gray-900">
                   Exploradores
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {filteredExplorers.length} encontrado{filteredExplorers.length !== 1 ? 's' : ''}
+                  {filteredExplorers.length} encontrado{filteredExplorers.length !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>
-            <Button 
-              size="sm" 
-              onClick={onAddNew} 
-              className="flex-shrink-0 bg-gradient-to-r from-green-600 to-emerald-600"
-            >
-              <UserPlus className="w-4 h-4" />
+
+            <Button size="sm" onClick={onAddNew} className="flex-shrink-0">
+              <UserPlus className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="px-4 py-5 pb-safe">
-        {/* Search Bar */}
         <div className="mb-5">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre, código o responsable..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12"
+              className="h-12 pl-10"
             />
           </div>
         </div>
 
-        {/* Explorers Grid */}
         <div className="space-y-4">
-          {filteredExplorers.map((explorer) => (
-            <Card 
-              key={explorer.id}
-              className="cursor-pointer border"
-              onClick={() => onViewExplorer(explorer.id)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3 mb-3">
-                  <Avatar className="w-14 h-14 flex-shrink-0">
-                    <AvatarImage src={explorer.foto} alt={explorer.nombre} />
-                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
-                      {getInitials(explorer.nombre, explorer.apellidos)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm mb-1 truncate font-medium">
-                      {explorer.nombre} {explorer.apellidos}
+          {filteredExplorers.map((explorer) => {
+            const docsStatus = getDocumentsStatus(explorer);
+
+            return (
+              <Card
+                key={explorer.id}
+                className="cursor-pointer border border-gray-200 shadow-sm transition hover:bg-gray-50"
+                onClick={() => onViewExplorer(explorer.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="mb-3 flex items-start space-x-3">
+                    <Avatar className="h-14 w-14 flex-shrink-0">
+                      <AvatarImage src={getPhotoSrc(explorer)} alt={explorer.nombre} />
+                      <AvatarFallback className="bg-gray-100 text-gray-700">
+                        {getInitials(explorer.nombre, explorer.apellidos)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-1 truncate text-sm font-medium text-gray-900">
+                        {explorer.nombre} {explorer.apellidos}
+                      </p>
+
+                      <p className="text-xs text-muted-foreground">
+                        {calculateAge(explorer.fechaNacimiento)} años
+                      </p>
+
+                      {explorer.codigoExplorador && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Código: {explorer.codigoExplorador}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 flex-shrink-0 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewExplorer(explorer.id);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="mb-3 space-y-1 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
+                    <p className="truncate">
+                      <span className="font-medium text-muted-foreground">Tel:</span>{" "}
+                      {explorer.telefono}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {calculateAge(explorer.fechaNacimiento)} años
+                    <p className="truncate">
+                      <span className="font-medium text-muted-foreground">Responsable:</span>{" "}
+                      {explorer.nombreResponsable}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="flex-shrink-0 h-8 w-8 p-0">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
 
-                <div className="space-y-1 text-xs mb-3 bg-gray-50 p-3 rounded-lg">
-                  <p className="truncate">
-                    <span className="text-muted-foreground font-medium">Tel:</span> {explorer.telefono}
-                  </p>
-                  <p className="truncate">
-                    <span className="text-muted-foreground font-medium">Responsable:</span> {explorer.nombreResponsable}
-                  </p>
-                </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className={docsStatus.className}>
+                      <FileText className="mr-1 h-3 w-3" />
+                      {docsStatus.label}
+                    </Badge>
 
-                <div className="flex flex-wrap gap-2">
-                  {explorer.aceptoCristo && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs border-0">
-                      Cristo
-                    </Badge>
-                  )}
-                  {explorer.bautizado && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs border-0">
-                      Bautizado
-                    </Badge>
-                  )}
-                  {explorer.asisteCelula && (
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs border-0">
-                      Célula
-                    </Badge>
-                  )}
-                  {(explorer.alergias || explorer.medicinaControlada) && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs border-0">
-                      ⚠️ Info médica
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {explorer.aceptoCristo && (
+                      <Badge variant="secondary" className="border-0 bg-green-100 text-xs text-green-800">
+                        Cristo
+                      </Badge>
+                    )}
+
+                    {explorer.bautizado && (
+                      <Badge variant="secondary" className="border-0 bg-blue-100 text-xs text-blue-800">
+                        Bautizado
+                      </Badge>
+                    )}
+
+                    {explorer.asisteCelula && (
+                      <Badge variant="secondary" className="border-0 bg-purple-100 text-xs text-purple-800">
+                        Célula
+                      </Badge>
+                    )}
+
+                    {(explorer.alergias || explorer.medicinaControlada) && (
+                      <Badge variant="secondary" className="border-0 bg-amber-100 text-xs text-amber-800">
+                        Info médica
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Empty State */}
         {filteredExplorers.length === 0 && (
-          <div className="text-center py-12">
-            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <div className="py-12 text-center">
+            <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">No se encontraron exploradores</p>
           </div>
         )}

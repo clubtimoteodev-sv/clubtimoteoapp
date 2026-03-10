@@ -1,53 +1,73 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { 
-  ArrowLeft, 
-  User, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  AlertCircle, 
-  Heart,
-  Users,
-  Church,
+import {
+  ArrowLeft,
+  User,
+  Phone,
+  MapPin,
+  Calendar,
   Edit,
   Save,
   X,
   CheckCircle2,
   XCircle,
-  ClipboardCheck
+  ClipboardCheck,
+  Clock3,
+  FileText,
+  Shield,
+  HeartPulse,
+  Users,
+  ExternalLink,
+  FileCheck2,
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 
 interface Explorer {
   id: string;
+  codigoExplorador?: string | null;
   nombre: string;
   apellidos: string;
   fechaNacimiento: string;
   telefono: string;
   direccion: string;
-  alergias?: string;
-  medicinaControlada?: string;
-  foto?: string;
+  alergias?: string | null;
+  medicinaControlada?: string | null;
+  foto?: string | null;
+  fotoUrl?: string | null;
+  recetaUrl?: string | null;
+  permisoUrl?: string | null;
+  estudia?: boolean;
+  nivelEducativo?: string | null;
   nombreResponsable: string;
   telefonoResponsable: string;
   aceptoCristo: boolean;
   bautizado: boolean;
   asisteCelula: boolean;
-  nombreLiderCelula?: string;
+  nombreLiderCelula?: string | null;
+}
+
+interface AttendanceApiRecord {
+  id: string;
+  meetingId: string;
+  attended: boolean;
+  justification?: string | null;
+  meeting?: {
+    id: string;
+    date: string;
+    type: string;
+    createdAt?: string;
+  };
 }
 
 interface AttendanceRecord {
   id: string;
+  meetingId: string;
   date: string;
   meetingType: string;
   meetingTypeName: string;
@@ -55,141 +75,77 @@ interface AttendanceRecord {
   justification?: string;
 }
 
-// Datos de ejemplo (deben coincidir con ExplorersList)
-const mockExplorers: Explorer[] = [
-  {
-    id: "1",
-    nombre: "Juan Carlos",
-    apellidos: "Pérez García",
-    fechaNacimiento: "2010-05-15",
-    telefono: "+1 (555) 123-4567",
-    direccion: "Calle Principal 123, Ciudad de México",
-    alergias: "Alergia al polen",
-    medicinaControlada: "Ninguna",
-    nombreResponsable: "María García",
-    telefonoResponsable: "+1 (555) 123-4568",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: true,
-    nombreLiderCelula: "Pastor Roberto Sánchez",
-  },
-  {
-    id: "2",
-    nombre: "Ana Sofía",
-    apellidos: "Martínez López",
-    fechaNacimiento: "2011-08-22",
-    telefono: "+1 (555) 234-5678",
-    direccion: "Avenida Reforma 456, Guadalajara",
-    alergias: "Alergia a frutos secos",
-    nombreResponsable: "Carlos Martínez",
-    telefonoResponsable: "+1 (555) 234-5679",
-    aceptoCristo: true,
-    bautizado: false,
-    asisteCelula: true,
-    nombreLiderCelula: "Hermana Laura González",
-  },
-  {
-    id: "3",
-    nombre: "Diego Alejandro",
-    apellidos: "Rodríguez Hernández",
-    fechaNacimiento: "2012-03-10",
-    telefono: "+1 (555) 345-6789",
-    direccion: "Boulevard Central 789, Monterrey",
-    medicinaControlada: "Inhalador para asma",
-    nombreResponsable: "Patricia Hernández",
-    telefonoResponsable: "+1 (555) 345-6790",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: false,
-  },
-  {
-    id: "4",
-    nombre: "María Fernanda",
-    apellidos: "González Ruiz",
-    fechaNacimiento: "2010-11-30",
-    telefono: "+1 (555) 456-7890",
-    direccion: "Calle Juárez 321, Puebla",
-    nombreResponsable: "Fernando González",
-    telefonoResponsable: "+1 (555) 456-7891",
-    aceptoCristo: false,
-    bautizado: false,
-    asisteCelula: true,
-    nombreLiderCelula: "Pastor Miguel Ángel",
-  },
-  {
-    id: "5",
-    nombre: "Luis Eduardo",
-    apellidos: "Sánchez Torres",
-    fechaNacimiento: "2011-07-18",
-    telefono: "+1 (555) 567-8901",
-    direccion: "Avenida Hidalgo 654, Querétaro",
-    alergias: "Intolerancia a la lactosa",
-    nombreResponsable: "Elena Torres",
-    telefonoResponsable: "+1 (555) 567-8902",
-    aceptoCristo: true,
-    bautizado: true,
-    asisteCelula: true,
-    nombreLiderCelula: "Hermano José Luis",
-  },
-];
-
-// Mock de asistencias por explorador
-const mockAttendanceByExplorer: Record<string, AttendanceRecord[]> = {
-  "1": [
-    { id: "1", date: "2025-10-15", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-    { id: "2", date: "2025-10-12", meetingType: "2", meetingTypeName: "Célula de Niños", attended: true },
-    { id: "3", date: "2025-10-08", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-    { id: "4", date: "2025-10-05", meetingType: "3", meetingTypeName: "Actividad Especial", attended: false, justification: "Enfermedad" },
-    { id: "5", date: "2025-10-01", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-  ],
-  "2": [
-    { id: "1", date: "2025-10-15", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-    { id: "2", date: "2025-10-12", meetingType: "2", meetingTypeName: "Célula de Niños", attended: true },
-    { id: "3", date: "2025-10-08", meetingType: "1", meetingTypeName: "Reunión General", attended: false },
-  ],
-  "3": [
-    { id: "1", date: "2025-10-15", meetingType: "1", meetingTypeName: "Reunión General", attended: false, justification: "Enfermedad" },
-    { id: "2", date: "2025-10-12", meetingType: "2", meetingTypeName: "Célula de Niños", attended: true },
-    { id: "3", date: "2025-10-08", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-  ],
-  "4": [
-    { id: "1", date: "2025-10-15", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-    { id: "2", date: "2025-10-12", meetingType: "2", meetingTypeName: "Célula de Niños", attended: false, justification: "Compromiso escolar" },
-    { id: "3", date: "2025-10-08", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-  ],
-  "5": [
-    { id: "1", date: "2025-10-15", meetingType: "1", meetingTypeName: "Reunión General", attended: false, justification: "Viaje familiar" },
-    { id: "2", date: "2025-10-12", meetingType: "2", meetingTypeName: "Célula de Niños", attended: true },
-    { id: "3", date: "2025-10-08", meetingType: "1", meetingTypeName: "Reunión General", attended: true },
-  ],
-};
-
 interface ExplorerDetailProps {
   explorerId: string;
   onBack: () => void;
+  onOpenMeeting: (meetingId: string) => void;
 }
 
-export function ExplorerDetail({ explorerId, onBack }: ExplorerDetailProps) {
-  const [explorer, setExplorer] = useState<Explorer | undefined>(
-    mockExplorers.find(e => e.id === explorerId)
-  );
+const legacyMeetingTypeMap: Record<string, string> = {
+  "1": "Reunión General",
+  "2": "Célula de Niños",
+  "3": "Actividad Especial",
+  "4": "Campamento",
+};
+
+function normalizeMeetingType(type?: string) {
+  if (!type) return "Sin tipo";
+  return legacyMeetingTypeMap[type] || type;
+}
+
+export function ExplorerDetail({
+  explorerId,
+  onBack,
+  onOpenMeeting,
+}: ExplorerDetailProps) {
+  const [explorer, setExplorer] = useState<Explorer | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Explorer | null>(null);
-  const attendanceRecords = mockAttendanceByExplorer[explorerId] || [];
 
-  if (!explorer) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Explorador no encontrado</p>
-            <Button onClick={onBack} className="w-full mt-4">
-              Volver al Listado
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  useEffect(() => {
+    loadExplorer();
+    loadAttendance();
+  }, [explorerId]);
+
+  async function loadExplorer() {
+    try {
+      setLoading(true);
+      const data = await apiFetch(`/api/explorers/${explorerId}`);
+      setExplorer(data);
+    } catch (err) {
+      console.error("Error cargando explorador:", err);
+      toast.error("Error cargando explorador");
+      setExplorer(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAttendance() {
+    try {
+      setAttendanceLoading(true);
+      const data: AttendanceApiRecord[] = await apiFetch(`/api/attendance/explorer/${explorerId}`);
+
+      const mapped = data.map((record) => ({
+        id: record.id,
+        meetingId: record.meetingId,
+        date: record.meeting?.date || "",
+        meetingType: record.meeting?.type || "",
+        meetingTypeName: normalizeMeetingType(record.meeting?.type),
+        attended: record.attended,
+        justification: record.justification || "",
+      }));
+
+      setAttendanceRecords(mapped);
+    } catch (err) {
+      console.error("Error cargando asistencia:", err);
+      setAttendanceRecords([]);
+    } finally {
+      setAttendanceLoading(false);
+    }
   }
 
   const calculateAge = (birthDate: string) => {
@@ -197,26 +153,61 @@ export function ExplorerDetail({ explorerId, onBack }: ExplorerDetailProps) {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
+
     return age;
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "Sin fecha";
+
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    if (Number.isNaN(date.getTime())) return "Sin fecha válida";
+
+    return date.toLocaleDateString("es-SV", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return "Sin fecha";
+
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "Sin fecha válida";
+
+    return date.toLocaleString("es-SV", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getInitials = (nombre: string, apellidos: string) => {
-    return `${nombre.charAt(0)}${apellidos.charAt(0)}`.toUpperCase();
+    return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
   };
 
+  const buildFileUrl = (raw?: string | null) => {
+    if (!raw) return null;
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+    return `http://localhost:4000${raw}`;
+  };
+
+  const getPhotoSrc = () => {
+    return buildFileUrl(explorer?.fotoUrl || explorer?.foto || null) || undefined;
+  };
+
+  const recetaLink = buildFileUrl(explorer?.recetaUrl);
+  const permisoLink = buildFileUrl(explorer?.permisoUrl);
+
   const handleEdit = () => {
+    if (!explorer) return;
     setEditForm({ ...explorer });
     setIsEditing(true);
   };
@@ -226,92 +217,183 @@ export function ExplorerDetail({ explorerId, onBack }: ExplorerDetailProps) {
     setIsEditing(false);
   };
 
-  const handleSaveEdit = () => {
-    if (editForm) {
-      setExplorer(editForm);
-      setIsEditing(false);
-      setEditForm(null);
-      toast.success("Datos actualizados correctamente");
-    }
-  };
+  const handleSaveEdit = async () => {
+    if (!editForm || !explorer) return;
 
-  const handleInputChange = (field: keyof Explorer, value: string | boolean) => {
-    if (editForm) {
-      setEditForm({ ...editForm, [field]: value });
+    try {
+      const payload = {
+        codigoExplorador: editForm.codigoExplorador || null,
+        nombre: editForm.nombre,
+        apellidos: editForm.apellidos,
+        fechaNacimiento: editForm.fechaNacimiento,
+        telefono: editForm.telefono,
+        direccion: editForm.direccion,
+        alergias: editForm.alergias || null,
+        medicinaControlada: editForm.medicinaControlada || null,
+        estudia: editForm.estudia ?? false,
+        nivelEducativo: editForm.nivelEducativo || null,
+        nombreResponsable: editForm.nombreResponsable,
+        telefonoResponsable: editForm.telefonoResponsable,
+        aceptoCristo: editForm.aceptoCristo,
+        bautizado: editForm.bautizado,
+        asisteCelula: editForm.asisteCelula,
+        nombreLiderCelula: editForm.asisteCelula ? editForm.nombreLiderCelula || null : null,
+        fotoUrl: editForm.fotoUrl || null,
+        recetaUrl: editForm.recetaUrl || null,
+        permisoUrl: editForm.permisoUrl || null,
+      };
+
+      const updated = await apiFetch(`/api/explorers/${explorer.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      setExplorer(updated);
+      setEditForm(null);
+      setIsEditing(false);
+      toast.success("Datos actualizados correctamente");
+    } catch (error) {
+      console.error("Error guardando cambios:", error);
+      toast.error("No se pudo actualizar el explorador");
     }
   };
 
   const getAttendanceStats = () => {
     const total = attendanceRecords.length;
-    const attended = attendanceRecords.filter(r => r.attended).length;
+    const attended = attendanceRecords.filter((r) => r.attended).length;
     const absent = total - attended;
     const percentage = total > 0 ? Math.round((attended / total) * 100) : 0;
     return { total, attended, absent, percentage };
   };
 
   const stats = getAttendanceStats();
+  const current = isEditing && editForm ? editForm : explorer;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 px-4 py-6">
+        <div className="mx-auto max-w-5xl">
+          <Card className="border border-gray-200 bg-white shadow-sm">
+            <CardContent className="p-6">
+              <p className="text-sm text-gray-500">Cargando explorador...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!explorer || !current) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <Card className="w-full max-w-md border border-gray-200 bg-white shadow-sm">
+          <CardContent className="pt-6">
+            <p className="text-center text-sm text-gray-500">Explorador no encontrado</p>
+            <Button
+              onClick={onBack}
+              variant="outline"
+              className="mt-4 w-full border-gray-200 text-gray-700 hover:bg-gray-100"
+            >
+              Volver al Listado
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const documentItemClasses =
+    "flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 transition-colors hover:bg-gray-50";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 flex-1 min-w-0">
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="w-4 h-4" />
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-5xl px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-4 w-4" />
               </Button>
+
               <div className="min-w-0">
-                <p className="text-sm truncate">Detalles del Explorador</p>
+                <p className="truncate text-sm font-medium text-gray-900">
+                  Detalles del Explorador
+                </p>
+                <p className="truncate text-xs text-gray-500">
+                  Información personal y asistencia
+                </p>
               </div>
             </div>
+
             {isEditing ? (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                  <X className="w-4 h-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="border-gray-200 text-gray-700 hover:bg-gray-100"
+                >
+                  <X className="h-4 w-4" />
                 </Button>
-                <Button size="sm" onClick={handleSaveEdit}>
-                  <Save className="w-4 h-4" />
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  className="bg-gray-900 text-white hover:bg-gray-800"
+                >
+                  <Save className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleEdit}>
-                <Edit className="w-4 h-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="border-gray-200 text-gray-700 hover:bg-gray-100"
+              >
+                <Edit className="h-4 w-4" />
               </Button>
             )}
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-4 pb-safe">
-        {/* Profile Header */}
-        <Card className="mb-4">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+        <Card className="border border-gray-200 bg-white shadow-sm">
           <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center mb-4">
-              <Avatar className="w-24 h-24 mb-3">
-                <AvatarImage src={explorer.foto} alt={explorer.nombre} />
-                <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white text-2xl">
-                  {getInitials(explorer.nombre, explorer.apellidos)}
+            <div className="flex flex-col items-center text-center">
+              <Avatar className="mb-4 h-24 w-24 border border-gray-200">
+                <AvatarImage src={getPhotoSrc()} alt={current.nombre} />
+                <AvatarFallback className="bg-gray-100 text-2xl font-semibold text-gray-700">
+                  {getInitials(current.nombre, current.apellidos)}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="text-lg mb-1">{explorer.nombre} {explorer.apellidos}</h2>
-              <p className="text-sm text-muted-foreground mb-3">
-                {calculateAge(explorer.fechaNacimiento)} años
+
+              <h2 className="text-xl font-semibold text-gray-900">
+                {current.nombre} {current.apellidos}
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                {calculateAge(current.fechaNacimiento)} años
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {explorer.aceptoCristo && (
-                  <Badge className="bg-green-100 text-green-800 text-xs border-0">
+
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {current.aceptoCristo && (
+                  <Badge className="border border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
                     Aceptó a Cristo
                   </Badge>
                 )}
-                {explorer.bautizado && (
-                  <Badge className="bg-blue-100 text-blue-800 text-xs border-0">
+                {current.bautizado && (
+                  <Badge className="border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
                     Bautizado en Agua
                   </Badge>
                 )}
-                {explorer.asisteCelula && (
-                  <Badge className="bg-purple-100 text-purple-800 text-xs border-0">
+                {current.asisteCelula && (
+                  <Badge className="border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-50">
                     Asiste a Célula
                   </Badge>
                 )}
@@ -320,427 +402,342 @@ export function ExplorerDetail({ explorerId, onBack }: ExplorerDetailProps) {
           </CardContent>
         </Card>
 
-        {/* Tabs */}
         <Tabs defaultValue="datos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="datos">Datos</TabsTrigger>
-            <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 border border-gray-200 bg-white shadow-sm">
+            <TabsTrigger
+              value="datos"
+              className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+            >
+              Datos
+            </TabsTrigger>
+            <TabsTrigger
+              value="asistencia"
+              className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+            >
+              Asistencia
+            </TabsTrigger>
           </TabsList>
 
-          {/* Tab de Datos */}
           <TabsContent value="datos" className="space-y-4">
-            {isEditing && editForm ? (
-              // Modo de edición
-              <>
-                {/* Datos Personales */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <User className="w-4 h-4 mr-2" />
-                      Datos Personales
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Nombre</Label>
-                      <Input
-                        value={editForm.nombre}
-                        onChange={(e) => handleInputChange("nombre", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Apellidos</Label>
-                      <Input
-                        value={editForm.apellidos}
-                        onChange={(e) => handleInputChange("apellidos", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Fecha de Nacimiento</Label>
-                      <Input
-                        type="date"
-                        value={editForm.fechaNacimiento}
-                        onChange={(e) => handleInputChange("fechaNacimiento", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Teléfono</Label>
-                      <Input
-                        value={editForm.telefono}
-                        onChange={(e) => handleInputChange("telefono", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Dirección</Label>
-                      <Textarea
-                        value={editForm.direccion}
-                        onChange={(e) => handleInputChange("direccion", e.target.value)}
-                        rows={2}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <User className="mr-2 h-4 w-4 text-gray-500" />
+                  Datos Personales
+                </CardTitle>
+              </CardHeader>
 
-                {/* Información Médica */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Información Médica
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Alergias</Label>
-                      <Textarea
-                        value={editForm.alergias || ""}
-                        onChange={(e) => handleInputChange("alergias", e.target.value)}
-                        rows={2}
-                        placeholder="Especifica las alergias"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Medicina Controlada</Label>
-                      <Textarea
-                        value={editForm.medicinaControlada || ""}
-                        onChange={(e) => handleInputChange("medicinaControlada", e.target.value)}
-                        rows={2}
-                        placeholder="Especifica medicamentos"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Calendar className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Fecha de Nacimiento
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {formatDate(current.fechaNacimiento)}
+                    </p>
+                  </div>
+                </div>
 
-                {/* Datos Familiares */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Users className="w-4 h-4 mr-2" />
-                      Datos Familiares
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Responsable</Label>
-                      <Input
-                        value={editForm.nombreResponsable}
-                        onChange={(e) => handleInputChange("nombreResponsable", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Teléfono del Responsable</Label>
-                      <Input
-                        value={editForm.telefonoResponsable}
-                        onChange={(e) => handleInputChange("telefonoResponsable", e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <Separator className="bg-gray-200" />
 
-                {/* Datos Eclesiásticos */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Church className="w-4 h-4 mr-2" />
-                      Datos Eclesiásticos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs">¿Aceptó a Cristo?</Label>
-                      <RadioGroup
-                        value={editForm.aceptoCristo ? "si" : "no"}
-                        onValueChange={(value) => handleInputChange("aceptoCristo", value === "si")}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="si" id="cristo-si" />
-                          <Label htmlFor="cristo-si" className="text-sm">Sí</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="cristo-no" />
-                          <Label htmlFor="cristo-no" className="text-sm">No</Label>
-                        </div>
-                      </RadioGroup>
+                <div className="flex items-start gap-3">
+                  <Phone className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Teléfono
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">{current.telefono}</p>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-200" />
+
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Dirección
+                    </p>
+                    <p className="mt-1 break-words text-sm text-gray-900">
+                      {current.direccion}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <HeartPulse className="mr-2 h-4 w-4 text-gray-500" />
+                  Información Médica
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Alergias
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {current.alergias || "No registradas"}
+                  </p>
+                </div>
+
+                <Separator className="bg-gray-200" />
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Medicina controlada
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {current.medicinaControlada || "No registrada"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <Users className="mr-2 h-4 w-4 text-gray-500" />
+                  Responsable
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Nombre del responsable
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {current.nombreResponsable}
+                  </p>
+                </div>
+
+                <Separator className="bg-gray-200" />
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Teléfono del responsable
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {current.telefonoResponsable}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <FileText className="mr-2 h-4 w-4 text-gray-500" />
+                  Documentos
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-3">
+                <div className={documentItemClasses}>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-2">
+                      <Shield className="h-4 w-4 text-gray-500" />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">¿Bautizado?</Label>
-                      <RadioGroup
-                        value={editForm.bautizado ? "si" : "no"}
-                        onValueChange={(value) => handleInputChange("bautizado", value === "si")}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="si" id="bautizado-si" />
-                          <Label htmlFor="bautizado-si" className="text-sm">Sí</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="bautizado-no" />
-                          <Label htmlFor="bautizado-no" className="text-sm">No</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">¿Asiste a Célula?</Label>
-                      <RadioGroup
-                        value={editForm.asisteCelula ? "si" : "no"}
-                        onValueChange={(value) => handleInputChange("asisteCelula", value === "si")}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="si" id="celula-si" />
-                          <Label htmlFor="celula-si" className="text-sm">Sí</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="celula-no" />
-                          <Label htmlFor="celula-no" className="text-sm">No</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    {editForm.asisteCelula && (
-                      <div className="space-y-2">
-                        <Label className="text-xs">Líder de Célula</Label>
-                        <Input
-                          value={editForm.nombreLiderCelula || ""}
-                          onChange={(e) => handleInputChange("nombreLiderCelula", e.target.value)}
-                          className="h-10"
-                          placeholder="Nombre del líder"
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              // Modo de visualización
-              <>
-                {/* Datos Personales */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <User className="w-4 h-4 mr-2" />
-                      Datos Personales
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Fecha de Nacimiento</p>
-                        <p className="text-sm">{formatDate(explorer.fechaNacimiento)}</p>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">Receta médica</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        {recetaLink ? (
+                          <>
+                            <FileCheck2 className="h-3.5 w-3.5 text-green-600" />
+                            <span className="text-xs text-green-700">Receta subida</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-500">No hay documento cargado</span>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    <Separator />
+                  {recetaLink ? (
+                    <a
+                      href={recetaLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700"
+                    >
+                      Ver archivo
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-gray-400">Sin archivo</span>
+                  )}
+                </div>
 
-                    <div className="flex items-start space-x-3">
-                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Teléfono</p>
-                        <p className="text-sm">{explorer.telefono}</p>
-                      </div>
+                <div className={documentItemClasses}>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
                     </div>
 
-                    <Separator />
-
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Dirección</p>
-                        <p className="text-sm break-words">{explorer.direccion}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">Permiso firmado</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        {permisoLink ? (
+                          <>
+                            <FileCheck2 className="h-3.5 w-3.5 text-green-600" />
+                            <span className="text-xs text-green-700">Permiso subido</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-500">No hay documento cargado</span>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Información Médica */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Información Médica
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground">Alergias</p>
-                        <p className="text-sm break-words">{explorer.alergias || "No registra alergias"}</p>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground">Medicina Controlada</p>
-                        <p className="text-sm break-words">{explorer.medicinaControlada || "No requiere medicamentos"}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Datos Familiares */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Users className="w-4 h-4 mr-2" />
-                      Datos Familiares
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <User className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Responsable</p>
-                        <p className="text-sm">{explorer.nombreResponsable}</p>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-start space-x-3">
-                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Teléfono del Responsable</p>
-                        <p className="text-sm">{explorer.telefonoResponsable}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Datos Eclesiásticos */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-base">
-                      <Church className="w-4 h-4 mr-2" />
-                      Datos Eclesiásticos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Aceptó a Cristo</p>
-                        <p className={`text-sm ${explorer.aceptoCristo ? "text-green-600" : "text-slate-600"}`}>
-                          {explorer.aceptoCristo ? "Sí" : "No"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Bautizado</p>
-                        <p className={`text-sm ${explorer.bautizado ? "text-blue-600" : "text-slate-600"}`}>
-                          {explorer.bautizado ? "Sí" : "No"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <p className="text-xs text-muted-foreground">Asiste a Célula</p>
-                      <p className={`text-sm ${explorer.asisteCelula ? "text-purple-600" : "text-slate-600"}`}>
-                        {explorer.asisteCelula ? "Sí" : "No"}
-                      </p>
-                    </div>
-
-                    {explorer.asisteCelula && explorer.nombreLiderCelula && (
-                      <>
-                        <Separator />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Líder de Célula</p>
-                          <p className="text-sm break-words">{explorer.nombreLiderCelula}</p>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
+                  {permisoLink ? (
+                    <a
+                      href={permisoLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700"
+                    >
+                      Ver archivo
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-gray-400">Sin archivo</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Tab de Asistencia */}
           <TabsContent value="asistencia" className="space-y-4">
-            {/* Estadísticas de Asistencia */}
-            <div className="grid grid-cols-4 gap-2">
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Total</p>
-                  <p className="text-base">{stats.total}</p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Card className="border border-gray-200 bg-white shadow-sm">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Total
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-gray-900">{stats.total}</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Asistió</p>
-                  <p className="text-base text-green-600">{stats.attended}</p>
+
+              <Card className="border border-gray-200 bg-white shadow-sm">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Asistió
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-green-600">
+                    {stats.attended}
+                  </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Faltó</p>
-                  <p className="text-base text-red-600">{stats.absent}</p>
+
+              <Card className="border border-gray-200 bg-white shadow-sm">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Faltó
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-red-600">
+                    {stats.absent}
+                  </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">%</p>
-                  <p className="text-base">{stats.percentage}%</p>
+
+              <Card className="border border-gray-200 bg-white shadow-sm">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Porcentaje
+                  </p>
+                  <p
+                    className={`mt-2 text-xl font-semibold ${
+                      stats.percentage >= 80
+                        ? "text-green-600"
+                        : stats.percentage >= 60
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {stats.percentage}%
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Historial de Asistencias */}
-            <Card>
+            <Card className="border border-gray-200 bg-white shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-base">
-                  <ClipboardCheck className="w-4 h-4 mr-2" />
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <ClipboardCheck className="mr-2 h-4 w-4 text-gray-500" />
                   Historial de Asistencias
                 </CardTitle>
               </CardHeader>
+
               <CardContent className="p-0">
-                <div className="divide-y">
-                  {attendanceRecords.length === 0 ? (
+                <div className="divide-y divide-gray-200">
+                  {attendanceLoading ? (
                     <div className="p-8 text-center">
-                      <p className="text-sm text-muted-foreground">
-                        No hay registros de asistencia
-                      </p>
+                      <p className="text-sm text-gray-500">Cargando asistencias...</p>
+                    </div>
+                  ) : attendanceRecords.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-sm text-gray-500">No hay registros de asistencia</p>
                     </div>
                   ) : (
                     attendanceRecords.map((record) => (
-                      <div key={record.id} className="p-4">
+                      <button
+                        key={record.id}
+                        type="button"
+                        className="w-full p-4 text-left transition-colors hover:bg-gray-50"
+                        onClick={() => onOpenMeeting(record.meetingId)}
+                      >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
                               {record.attended ? (
-                                <Badge className="bg-green-100 text-green-800 text-xs border-0">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                <Badge className="border border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                                  <CheckCircle2 className="mr-1 h-3 w-3" />
                                   Asistió
                                 </Badge>
                               ) : (
-                                <Badge className="bg-red-100 text-red-800 text-xs border-0">
-                                  <XCircle className="w-3 h-3 mr-1" />
+                                <Badge className="border border-red-200 bg-red-50 text-red-700 hover:bg-red-50">
+                                  <XCircle className="mr-1 h-3 w-3" />
                                   No asistió
                                 </Badge>
                               )}
-                              <Badge variant="outline" className="text-xs">
-                                Tipo {record.meetingType}
+
+                              <Badge
+                                variant="outline"
+                                className="border-gray-200 bg-white text-gray-600"
+                              >
+                                {record.meetingTypeName}
                               </Badge>
                             </div>
-                            <p className="text-sm mb-1">{record.meetingTypeName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(record.date)}
+
+                            <p className="mb-1 text-sm font-medium text-gray-900">
+                              {record.meetingTypeName}
                             </p>
+
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Clock3 className="h-3.5 w-3.5" />
+                              <span>{formatDateTime(record.date)}</span>
+                            </div>
+
                             {record.justification && (
-                              <p className="text-xs text-muted-foreground mt-2 bg-amber-50 p-2 rounded">
-                                <span className="font-medium">Justificación:</span> {record.justification}
+                              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                <span className="font-semibold">Justificación:</span>{" "}
+                                {record.justification}
                               </p>
                             )}
                           </div>
+
+                          <span className="mt-1 shrink-0 text-xs font-medium text-blue-600">
+                            Ver reunión
+                          </span>
                         </div>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
