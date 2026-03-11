@@ -43,7 +43,7 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
   useEffect(() => {
     async function loadExplorers() {
       try {
-        const data = await apiFetch("/api/explorers");
+        const data = await apiFetch("/explorers");
         setExplorers(data);
       } catch (err) {
         console.error("Error loading explorers:", err);

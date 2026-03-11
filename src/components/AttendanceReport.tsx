@@ -206,7 +206,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
     try {
       setLoadingMeetings(true);
 
-      const data: MeetingApi[] = await apiFetch("/api/attendance/meetings");
+      const data: MeetingApi[] = await apiFetch("/attendance/meetings");
       const mappedMeetings = data.map(mapMeetingFromApi);
 
       setMeetings(mappedMeetings);
@@ -222,7 +222,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
     try {
       setLoadingDetail(true);
 
-      const data: MeetingApi = await apiFetch(`/api/attendance/meetings/${meetingId}`);
+      const data: MeetingApi = await apiFetch(`/attendance/meetings/${meetingId}`);
       const mappedMeeting = mapMeetingFromApi(data);
 
       setSelectedMeeting(mappedMeeting);
@@ -301,7 +301,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
         justification: record.justification || "",
       }));
 
-      await apiFetch(`/api/attendance/meetings/${selectedMeeting.id}`, {
+      await apiFetch(`/attendance/meetings/${selectedMeeting.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           date: editDate,

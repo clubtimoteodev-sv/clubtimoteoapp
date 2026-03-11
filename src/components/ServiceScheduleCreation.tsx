@@ -80,8 +80,8 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
       setLoading(true);
 
       const [explorersData, groupsData] = await Promise.all([
-        apiFetch("/api/explorers"),
-        apiFetch("/api/service-groups"),
+        apiFetch("/explorers"),
+        apiFetch("/service-groups"),
       ]);
 
       setExplorers(explorersData);
@@ -168,13 +168,13 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
       };
 
       if (editId) {
-        await apiFetch(`/api/service-groups/${editId}`, {
+        await apiFetch(`/service-groups/${editId}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
         });
         toast.success("Grupo actualizado");
       } else {
-        await apiFetch("/api/service-groups", {
+        await apiFetch("/service-groups", {
           method: "POST",
           body: JSON.stringify(payload),
         });
@@ -196,7 +196,7 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
     if (!deleteId) return;
 
     try {
-      await apiFetch(`/api/service-groups/${deleteId}`, {
+      await apiFetch(`/service-groups/${deleteId}`, {
         method: "DELETE",
       });
 
