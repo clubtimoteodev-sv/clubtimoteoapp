@@ -27,13 +27,17 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
 
     try {
-      const data = await apiFetch("/api/auth/login", {
+      const data = await apiFetch("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
 
       localStorage.setItem("token", data.token);
       onLogin(data.token);
+
     } catch (err) {
       localStorage.removeItem("token");
       alert("Credenciales incorrectas");
@@ -46,6 +50,7 @@ export function Login({ onLogin }: LoginProps) {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <Card className="w-full max-w-md border">
         <CardHeader className="space-y-1 pb-6">
+          
           <div className="mb-6 flex items-center justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600">
               <Users className="h-8 w-8 text-white" />
@@ -59,10 +64,12 @@ export function Login({ onLogin }: LoginProps) {
           <CardDescription className="text-center">
             Sistema de Gestión de Exploradores
           </CardDescription>
+
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-5">
+
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input
@@ -90,9 +97,11 @@ export function Login({ onLogin }: LoginProps) {
                 disabled={loading}
               />
             </div>
+
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4 pt-2">
+            
             <Button
               type="submit"
               className="h-11 w-full bg-gradient-to-r from-indigo-600 to-purple-600"
@@ -108,6 +117,7 @@ export function Login({ onLogin }: LoginProps) {
                 Recuperar
               </a>
             </p>
+
           </CardFooter>
         </form>
       </Card>
