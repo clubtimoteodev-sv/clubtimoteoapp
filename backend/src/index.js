@@ -36,9 +36,15 @@ const __dirname = path.dirname(__filename);
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
 app.use("/uploads", express.static(path.join(__dirname, "..", uploadDir)));
 
-app.get("/", (_req, res) => res.json({ ok: true, msg: "Club API running" }));
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.get("/", (_req, res) => {
+  res.json({ ok: true, msg: "Club API running" });
+});
 
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// routes
 app.use("/api/auth", authRoutes);
 app.use("/api/explorers", explorersRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -49,5 +55,10 @@ app.use("/api/service-attendance", serviceAttendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/calendar", calendarRoutes);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+// PORT for Railway
+const PORT = process.env.PORT || 8080;
+
+// IMPORTANT: listen on 0.0.0.0 for Railway
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 API running on port ${PORT}`);
+});
