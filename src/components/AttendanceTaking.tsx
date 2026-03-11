@@ -65,7 +65,7 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
     async function loadExplorers() {
       try {
         setLoading(true);
-        const data = await apiFetch("/api/explorers");
+        const data = await apiFetch("/explorers");
         setExplorers(data);
       } catch (error) {
         console.error("Error cargando exploradores:", error);

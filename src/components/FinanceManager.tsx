@@ -100,7 +100,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
   async function loadMovements() {
     try {
       setLoading(true);
-      const data = await apiFetch("/api/finance");
+      const data = await apiFetch("/finance");
       setMovements(data);
     } catch (error) {
       console.error(error);
@@ -330,13 +330,13 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
       };
 
       if (editId) {
-        await apiFetch(`/api/finance/${editId}`, {
+        await apiFetch(`/finance/${editId}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
         });
         toast.success("Movimiento actualizado");
       } else {
-        await apiFetch("/api/finance", {
+        await apiFetch("/finance", {
           method: "POST",
           body: JSON.stringify(payload),
         });
@@ -358,7 +358,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
     if (!deleteId) return;
 
     try {
-      await apiFetch(`/api/finance/${deleteId}`, {
+      await apiFetch(`/finance/${deleteId}`, {
         method: "DELETE",
       });
 

@@ -49,7 +49,7 @@ export function ServiceGroups({
   async function loadGroups() {
     try {
       setLoading(true);
-      const data = await apiFetch("/api/service-groups");
+      const data = await apiFetch("/service-groups");
       setGroups(data);
     } catch (error) {
       console.error(error);

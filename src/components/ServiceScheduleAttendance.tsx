@@ -68,7 +68,7 @@ export function ServiceScheduleAttendance({
   async function loadGroups() {
     try {
       setLoading(true);
-      const data = await apiFetch("/api/service-groups");
+      const data = await apiFetch("/service-groups");
       setServiceGroups(data);
     } catch (error) {
       console.error(error);
@@ -179,7 +179,7 @@ export function ServiceScheduleAttendance({
         note: memberAttendance[member.id]?.note ?? "",
       }));
 
-      await apiFetch("/api/service-attendance", {
+      await apiFetch("/service-attendance", {
         method: "POST",
         body: JSON.stringify({
           groupId: selectedGroupId,

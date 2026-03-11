@@ -113,7 +113,7 @@ export function ExplorerDetail({
   async function loadExplorer() {
     try {
       setLoading(true);
-      const data = await apiFetch(`/api/explorers/${explorerId}`);
+      const data = await apiFetch(`/explorers/${explorerId}`);
       setExplorer(data);
     } catch (err) {
       console.error("Error cargando explorador:", err);
@@ -127,7 +127,7 @@ export function ExplorerDetail({
   async function loadAttendance() {
     try {
       setAttendanceLoading(true);
-      const data: AttendanceApiRecord[] = await apiFetch(`/api/attendance/explorer/${explorerId}`);
+      const data: AttendanceApiRecord[] = await apiFetch(`/attendance/explorer/${explorerId}`);
 
       const mapped = data.map((record) => ({
         id: record.id,
@@ -243,7 +243,7 @@ export function ExplorerDetail({
         permisoUrl: editForm.permisoUrl || null,
       };
 
-      const updated = await apiFetch(`/api/explorers/${explorer.id}`, {
+      const updated = await apiFetch(`/explorers/${explorer.id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
