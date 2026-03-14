@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../services/api";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Meeting = {
   id: string;
@@ -13,31 +12,23 @@ type CalendarViewProps = {
 };
 
 function formatDateTimeLocal(date: Date) {
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, "0");
-  const d = `${date.getDate()}`.padStart(2, "0");
-  const h = `${date.getHours()}`.padStart(2, "0");
-  const min = `${date.getMinutes()}`.padStart(2, "0");
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
 
-  return `${y}-${m}-${d}T${h}:${min}`;
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function getMeetingColor(type: string) {
-  const t = type.toLowerCase();
-
-  if (t.includes("general")) return "bg-blue-100 text-blue-700";
-  if (t.includes("campamento")) return "bg-green-100 text-green-700";
-  if (t.includes("especial")) return "bg-purple-100 text-purple-700";
-
-  return "bg-gray-100 text-gray-700";
+function formatDate(date: string) {
+  return new Date(date).toLocaleString("es-SV", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
@@ -47,21 +38,21 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
   const [form, setForm] = useState({
-    date: formatDateTimeLocal(new Date(Date.now() + 86400000)),
+    date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     type: ""
   });
 
   const loadMeetings = async () => {
     try {
+      setLoading(true);
+
       const data = await apiFetch("/calendar/upcoming");
-      setMeetings(data);
-    } catch (e) {
-      console.error(e);
+
+      setMeetings(Array.isArray(data) ? data : []);
+
+    } catch (error) {
+      console.error("Error cargando reuniones:", error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +65,7 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.type.trim()) return;
+    if (!form.type.trim() || !form.date) return;
 
     try {
       setSaving(true);
@@ -85,243 +76,151 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
       });
 
       setForm({
-        date: formatDateTimeLocal(new Date(Date.now() + 86400000)),
+        date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)),
         type: ""
       });
 
-      loadMeetings();
+      await loadMeetings();
 
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo crear la reunión");
+    } catch (error) {
+      console.error("Error creando reunión:", error);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("¿Eliminar reunión?")) return;
+
     try {
 
       await apiFetch(`/calendar/meetings/${id}`, {
         method: "DELETE"
       });
 
-      loadMeetings();
+      await loadMeetings();
 
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error("Error eliminando reunión:", error);
     }
   };
 
-  const startOfMonth = new Date(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth(),
-    1
-  );
-
-  const startDay = startOfMonth.getDay();
-
-  const days: Date[] = [];
-
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(startOfMonth);
-    d.setDate(i - startDay + 1);
-    days.push(d);
-  }
-
-  const meetingsOfDay = selectedDay
-    ? meetings.filter(m => sameDay(new Date(m.date), selectedDay))
-    : [];
-
-  const monthName = currentMonth.toLocaleString("es-SV", {
-    month: "long",
-    year: "numeric"
-  });
-
-  const today = new Date();
-
   return (
-
     <div className="space-y-8">
 
       <div>
-        <h1 className="text-3xl font-bold">Calendario</h1>
-        <p className="text-sm text-gray-500">
-          Gestión de reuniones del club
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Calendario
+        </h1>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Crear y administrar reuniones del club
         </p>
       </div>
 
-      {/* CREAR */}
+      {/* FORMULARIO */}
 
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
 
-        <h2 className="font-semibold mb-4">Crear reunión</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Nueva reunión
+        </h2>
 
-        <form onSubmit={handleCreate} className="flex gap-3 flex-wrap">
+        <form onSubmit={handleCreate} className="mt-5 grid gap-4 md:grid-cols-3">
 
-          <input
-            type="text"
-            value={form.type}
-            onChange={e =>
-              setForm(p => ({ ...p, type: e.target.value }))
-            }
-            placeholder="Tipo de reunión"
-            className="border rounded-xl px-4 py-2"
-          />
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Tipo de reunión
+            </label>
 
-          <input
-            type="datetime-local"
-            value={form.date}
-            onChange={e =>
-              setForm(p => ({ ...p, date: e.target.value }))
-            }
-            className="border rounded-xl px-4 py-2"
-          />
+            <input
+              type="text"
+              value={form.type}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, type: e.target.value }))
+              }
+              placeholder="Ej. Reunión general"
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+            />
+          </div>
 
-          <button
-            disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl"
-          >
-            {saving ? "Guardando..." : "Crear"}
-          </button>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Fecha y hora
+            </label>
+
+            <input
+              type="datetime-local"
+              value={form.date}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, date: e.target.value }))
+              }
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-xl bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+            >
+              {saving ? "Guardando..." : "Guardar reunión"}
+            </button>
+          </div>
 
         </form>
 
       </div>
 
-      {/* HEADER CALENDARIO */}
+      {/* LISTA DE REUNIONES */}
 
-      <div className="flex items-center justify-between">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
 
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth() - 1
-              )
-            )
-          }
-        >
-          <ChevronLeft />
-        </button>
-
-        <h2 className="text-lg font-semibold capitalize">
-          {monthName}
+        <h2 className="text-lg font-semibold text-gray-900">
+          Próximas reuniones
         </h2>
 
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth() + 1
-              )
-            )
-          }
-        >
-          <ChevronRight />
-        </button>
+        <div className="mt-5 space-y-3">
 
-      </div>
+          {loading ? (
+            <p className="text-sm text-gray-500">Cargando...</p>
 
-      {/* CALENDARIO */}
-
-      <div className="grid grid-cols-7 gap-2">
-
-        {days.map(day => {
-
-          const dayMeetings = meetings.filter(m =>
-            sameDay(new Date(m.date), day)
-          );
-
-          return (
-
-            <div
-              key={day.toISOString()}
-              onClick={() => setSelectedDay(day)}
-              className={`
-              min-h-[90px] p-2 rounded-xl border cursor-pointer
-              ${sameDay(day, today) ? "ring-2 ring-blue-500" : ""}
-              `}
-            >
-
-              <div className="text-sm font-medium">
-                {day.getDate()}
-              </div>
-
-              <div className="mt-1 space-y-1">
-
-                {dayMeetings.slice(0,2).map(m => (
-
-                  <div
-                    key={m.id}
-                    className={`text-xs px-2 py-1 rounded ${getMeetingColor(m.type)}`}
-                  >
-                    {m.type}
-                  </div>
-
-                ))}
-
-              </div>
-
-            </div>
-
-          );
-
-        })}
-
-      </div>
-
-      {/* DETALLE DIA */}
-
-      {selectedDay && (
-
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-
-          <h2 className="font-semibold mb-4">
-            Reuniones del {selectedDay.toLocaleDateString()}
-          </h2>
-
-          {meetingsOfDay.length === 0 && (
+          ) : meetings.length === 0 ? (
             <p className="text-sm text-gray-500">
-              No hay reuniones este día
+              No hay reuniones registradas.
             </p>
-          )}
 
-          <div className="space-y-3">
-
-            {meetingsOfDay.map(m => (
+          ) : (
+            meetings.map((meeting) => (
 
               <div
-                key={m.id}
-                className="border rounded-xl p-4 flex justify-between"
+                key={meeting.id}
+                className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4"
               >
 
                 <div>
-
-                  <p className="font-medium">
-                    {m.type}
+                  <p className="font-medium text-gray-900">
+                    {meeting.type}
                   </p>
 
                   <p className="text-sm text-gray-500">
-                    {new Date(m.date).toLocaleTimeString()}
+                    {formatDate(meeting.date)}
                   </p>
-
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
 
                   <button
-                    onClick={() => onTakeAttendance(m.id)}
-                    className="text-blue-600 text-sm"
+                    onClick={() => onTakeAttendance(meeting.id)}
+                    className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100"
                   >
-                    Asistencia
+                    Tomar asistencia
                   </button>
 
                   <button
-                    onClick={() => handleDelete(m.id)}
-                    className="text-red-600 text-sm"
+                    onClick={() => handleDelete(meeting.id)}
+                    className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                   >
                     Eliminar
                   </button>
@@ -330,15 +229,13 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
 
               </div>
 
-            ))}
-
-          </div>
+            ))
+          )}
 
         </div>
 
-      )}
+      </div>
 
     </div>
-
   );
 }
