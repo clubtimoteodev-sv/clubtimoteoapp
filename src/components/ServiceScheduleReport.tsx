@@ -55,7 +55,7 @@ export function ServiceScheduleReport({
       setLoading(true);
 
       const data = await apiFetch(
-        `/api/service-attendance/group/${groupId}`
+        `/service-attendance/group/${groupId}`
       );
 
       setRecords(data);
