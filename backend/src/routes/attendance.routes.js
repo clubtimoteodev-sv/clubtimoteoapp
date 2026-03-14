@@ -188,4 +188,28 @@ router.get("/explorer/:explorerId", async (req, res) => {
   }
 });
 
+router.delete("/meetings/:id", async (req, res) => {
+  try {
+
+    const meetingId = req.params.id;
+
+    // borrar registros de asistencia primero
+    await prisma.attendanceRecord.deleteMany({
+      where: { meetingId }
+    });
+
+    // borrar la reunión
+    await prisma.meeting.delete({
+      where: { id: meetingId }
+    });
+
+    res.json({ msg: "Reunión eliminada correctamente" });
+
+  } catch (error) {
+    console.error("Error deleting meeting:", error);
+    res.status(500).json({ msg: "Error interno del servidor" });
+  }
+});
+
+
 export default router;

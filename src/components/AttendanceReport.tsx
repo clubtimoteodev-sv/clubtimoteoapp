@@ -77,7 +77,7 @@ const predefinedMeetingTypes = [
   "Reunión General",
   "Célula de Niños",
   "Actividad Especial",
-  "Campamento"
+  "Campamento",
 ];
 
 const legacyMeetingTypeMap: Record<string, string> = {
@@ -97,9 +97,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
   const [loadingMeetings, setLoadingMeetings] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterFrom, setFilterFrom] = useState<string>("");
-  const [filterTo, setFilterTo] = useState<string>("");
+  const [period, setPeriod] = useState<string>("3m");
 
   const [isEditing, setIsEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
@@ -123,33 +121,21 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
   }, [meetings]);
 
   const filteredMeetings = useMemo(() => {
+    const now = new Date();
+    let months = 3;
+
+    if (period === "1m") months = 1;
+    if (period === "3m") months = 3;
+    if (period === "6m") months = 6;
+    if (period === "1y") months = 12;
+
+    const startDate = new Date();
+    startDate.setMonth(now.getMonth() - months);
+
     return meetings.filter((meeting) => {
-      const meetingDate = new Date(meeting.date);
-      meetingDate.setHours(0, 0, 0, 0);
-
-      if (filterType !== "all" && meeting.meetingTypeName !== filterType) {
-        return false;
-      }
-
-      if (filterFrom) {
-        const fromDate = new Date(filterFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (meetingDate < fromDate) {
-          return false;
-        }
-      }
-
-      if (filterTo) {
-        const toDate = new Date(filterTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (meetingDate > toDate) {
-          return false;
-        }
-      }
-
-      return true;
+      return new Date(meeting.date) >= startDate;
     });
-  }, [meetings, filterType, filterFrom, filterTo]);
+  }, [meetings, period]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -175,6 +161,12 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
     const total = meeting.attendanceRecords.length;
     const percentage = total > 0 ? Math.round((attended / total) * 100) : 0;
     return { attended, absent, total, percentage };
+  };
+
+  const getJustifiedCount = (records: AttendanceRecordView[]) => {
+    return records.filter(
+      (r) => !r.attended && (r.justification || "").trim() !== ""
+    ).length;
   };
 
   const getInitials = (fullName: string) => {
@@ -233,12 +225,6 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
     } finally {
       setLoadingDetail(false);
     }
-  }
-
-  function clearFilters() {
-    setFilterType("all");
-    setFilterFrom("");
-    setFilterTo("");
   }
 
   function startEditing() {
@@ -328,6 +314,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
       : selectedMeeting.attendanceRecords;
 
     const stats = getAttendanceStats({ attendanceRecords: currentRecords });
+    const justifiedCount = getJustifiedCount(currentRecords);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50">
@@ -367,79 +354,84 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
         </header>
 
         <main className="px-4 py-5 pb-safe">
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            <Card className="border">
-              <CardContent className="p-4">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Tipo de reunión</Label>
-                    <Select value={editMeetingType} onValueChange={setEditMeetingType}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Selecciona el tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableMeetingTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="mb-2 text-xs text-muted-foreground">Tipo de Reunión</p>
-                    <p className="truncate text-sm font-medium">
-                      {selectedMeeting.meetingTypeName}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+  <Card className="mb-5 border">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base">Información de la reunión</CardTitle>
+      <CardDescription className="text-xs">
+        Resumen general de la reunión seleccionada
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg border p-3 text-center">
+          <p className="mb-1 text-xs text-muted-foreground">Fecha</p>
+          <p className="text-sm font-medium">{formatShortDate(selectedMeeting.date)}</p>
+        </div>
 
-            <Card className="border">
-              <CardContent className="p-4">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Fecha</Label>
-                    <Input
-                      type="date"
-                      value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                      className="h-10"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="mb-2 text-xs text-muted-foreground">Asistencia</p>
-                    <p className="text-sm font-medium text-green-600">
-                      {stats.attended} / {stats.total}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+        <div className="rounded-lg border p-3 text-center">
+          <p className="mb-1 text-xs text-muted-foreground">Tipo</p>
+          <p className="text-sm font-medium">{selectedMeeting.meetingTypeName}</p>
+        </div>
 
-            <Card className="border">
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="mb-2 text-xs text-muted-foreground">Ausencias</p>
-                  <p className="text-sm font-medium text-red-600">{stats.absent}</p>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="rounded-lg border p-3 text-center">
+          <p className="mb-1 text-xs text-muted-foreground">Exploradores</p>
+          <p className="text-sm font-medium">{stats.total}</p>
+        </div>
 
-            <Card className="border">
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <div className="mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600">
-                    <TrendingUp className="h-4 w-4 text-white" />
-                  </div>
-                  <p className="text-sm font-medium">{stats.percentage}%</p>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="rounded-lg border p-3 text-center">
+          <p className="mb-1 text-xs text-muted-foreground">Justificados</p>
+          <p className="text-sm font-medium text-amber-600">{justifiedCount}</p>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  <div className="mb-5 grid grid-cols-2 gap-3">
+    {isEditing && (
+      <Card className="col-span-2 border">
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <Label className="text-xs">Tipo de reunión</Label>
+            <Select value={editMeetingType} onValueChange={setEditMeetingType}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Selecciona el tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMeetingTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        </CardContent>
+      </Card>
+    )}
+
+    <Card className="border">
+      <CardContent className="p-4">
+        <div className="text-center">
+          <p className="mb-2 text-xs text-muted-foreground">Ausencias</p>
+          <p className="text-sm font-medium text-red-600">{stats.absent}</p>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card className="border">
+      <CardContent className="p-4">
+        <div className="text-center">
+          <div className="mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600">
+            <TrendingUp className="h-4 w-4 text-white" />
+          </div>
+          <p className="text-sm font-medium">{stats.percentage}%</p>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+
+
+        
 
           <Card className="border">
             <CardHeader className="pb-3">
@@ -450,79 +442,95 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y">
-                {currentRecords.map((record) => (
-                  <div key={record.explorerId} className="p-4">
-                    <div className="flex items-start space-x-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={record.foto} alt={record.explorerName} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-sm text-white">
-                          {getInitials(record.explorerName)}
-                        </AvatarFallback>
-                      </Avatar>
+                {currentRecords.map((record) => {
+                  const isJustified =
+                    !record.attended && (record.justification || "").trim() !== "";
 
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-2 break-words text-sm font-medium">
-                          {record.explorerName}
-                        </p>
+                  return (
+                    <div key={record.explorerId} className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={record.foto} alt={record.explorerName} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-sm text-white">
+                            {getInitials(record.explorerName)}
+                          </AvatarFallback>
+                        </Avatar>
 
-                        {!isEditing ? (
-                          <>
-                            <div className="mb-2 flex items-center space-x-2">
-                              {record.attended ? (
-                                <Badge className="border-0 bg-green-100 text-xs text-green-800">
-                                  <CheckCircle2 className="mr-1 h-3 w-3" />
-                                  Asistió
-                                </Badge>
-                              ) : (
-                                <Badge className="border-0 bg-red-100 text-xs text-red-800">
-                                  <XCircle className="mr-1 h-3 w-3" />
-                                  No asistió
-                                </Badge>
-                              )}
-                            </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <p className="break-words text-sm font-medium">
+                              {record.explorerName}
+                            </p>
 
-                            {record.justification && (
-                              <p className="break-words rounded-md bg-amber-50 p-2 text-xs text-muted-foreground">
-                                <span className="font-medium">Justificación:</span>{" "}
-                                {record.justification}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`edit-attendance-${record.explorerId}`}
-                                checked={record.attended}
-                                onCheckedChange={(checked) =>
-                                  handleAttendanceChange(record.explorerId, checked === true)
-                                }
-                              />
-                              <Label htmlFor={`edit-attendance-${record.explorerId}`} className="text-sm">
-                                {record.attended ? "Asistió" : "Faltó"}
-                              </Label>
-                            </div>
-
-                            {!record.attended && (
-                              <div className="space-y-2">
-                                <Label className="text-xs">Justificación</Label>
-                                <Textarea
-                                  value={record.justification || ""}
-                                  onChange={(e) =>
-                                    handleJustificationChange(record.explorerId, e.target.value)
-                                  }
-                                  placeholder="Motivo de la ausencia"
-                                  rows={2}
-                                  className="text-sm"
-                                />
-                              </div>
+                            {isJustified && (
+                              <Badge className="border-0 bg-amber-100 text-xs text-amber-800">
+                                Justificado
+                              </Badge>
                             )}
                           </div>
-                        )}
+
+                          {!isEditing ? (
+                            <>
+                              <div className="mb-2 flex items-center space-x-2">
+                                {record.attended ? (
+                                  <Badge className="border-0 bg-green-100 text-xs text-green-800">
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                    Asistió
+                                  </Badge>
+                                ) : (
+                                  <Badge className="border-0 bg-red-100 text-xs text-red-800">
+                                    <XCircle className="mr-1 h-3 w-3" />
+                                    No asistió
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {record.justification && (
+                                <p className="break-words rounded-md bg-amber-50 p-2 text-xs text-muted-foreground">
+                                  <span className="font-medium">Justificación:</span>{" "}
+                                  {record.justification}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`edit-attendance-${record.explorerId}`}
+                                  checked={record.attended}
+                                  onCheckedChange={(checked) =>
+                                    handleAttendanceChange(record.explorerId, checked === true)
+                                  }
+                                />
+                                <Label
+                                  htmlFor={`edit-attendance-${record.explorerId}`}
+                                  className="text-sm"
+                                >
+                                  {record.attended ? "Asistió" : "Faltó"}
+                                </Label>
+                              </div>
+
+                              {!record.attended && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs">Justificación</Label>
+                                  <Textarea
+                                    value={record.justification || ""}
+                                    onChange={(e) =>
+                                      handleJustificationChange(record.explorerId, e.target.value)
+                                    }
+                                    placeholder="Motivo de la ausencia"
+                                    rows={2}
+                                    className="text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -565,58 +573,25 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
 
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs">Tipo de reunión</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
+              <Label className="text-xs">Periodo</Label>
+
+              <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Todos" />
+                  <SelectValue />
                 </SelectTrigger>
+
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {availableMeetingTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="1m">Último mes</SelectItem>
+                  <SelectItem value="3m">Últimos 3 meses</SelectItem>
+                  <SelectItem value="6m">Últimos 6 meses</SelectItem>
+                  <SelectItem value="1y">Último año</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="fromDate" className="text-xs">
-                  Desde
-                </Label>
-                <Input
-                  id="fromDate"
-                  type="date"
-                  value={filterFrom}
-                  onChange={(e) => setFilterFrom(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="toDate" className="text-xs">
-                  Hasta
-                </Label>
-                <Input
-                  id="toDate"
-                  type="date"
-                  value={filterTo}
-                  onChange={(e) => setFilterTo(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-muted-foreground">
-                Resultados: {filteredMeetings.length}
-              </p>
-              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Resultados: {filteredMeetings.length}
+            </p>
           </CardContent>
         </Card>
 
