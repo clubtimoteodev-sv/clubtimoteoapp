@@ -35,7 +35,6 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [meetings, setMeetings] = useState<Meeting[]>([]);
 
   const [form, setForm] = useState({
@@ -46,11 +45,8 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
   const loadMeetings = async () => {
     try {
       setLoading(true);
-
       const data = await apiFetch("/calendar/upcoming");
-
       setMeetings(Array.isArray(data) ? data : []);
-
     } catch (error) {
       console.error("Error cargando reuniones:", error);
     } finally {
@@ -93,20 +89,18 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
     if (!confirm("¿Eliminar reunión?")) return;
 
     try {
-
       await apiFetch(`/calendar/meetings/${id}`, {
         method: "DELETE"
       });
 
       await loadMeetings();
-
     } catch (error) {
       console.error("Error eliminando reunión:", error);
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gray-50 space-y-8">
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -117,8 +111,6 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
           Crear y administrar reuniones del club
         </p>
       </div>
-
-      {/* FORMULARIO */}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
 
@@ -172,8 +164,6 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
         </form>
 
       </div>
-
-      {/* LISTA DE REUNIONES */}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
 
