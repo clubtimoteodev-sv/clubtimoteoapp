@@ -157,7 +157,7 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
         permisoUrl,
       };
 
-      const res = await fetch("http://localhost:4000/api/explorers", {
+      const res = await fetch("https://x-production-e359.up.railway.app/api/explorers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
