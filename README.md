@@ -1,11 +1,10 @@
 
-  # Login and Home Menu
+  # Club Timoteo APP
 
-  This is a code bundle for Login and Home Menu. The original project is available at https://www.figma.com/design/hzJnHX1yhnlFPgKXzqcgPC/Login-and-Home-Menu.
+ 
 
   ## Running the code
 
-  Run `npm i` to install the dependencies.
+  Run `,/start.sh to install the dependencies and deploy frontend and backend
 
-  Run `npm run dev` to start the development server.
   
