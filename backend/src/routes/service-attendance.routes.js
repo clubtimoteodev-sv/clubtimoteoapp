@@ -9,13 +9,15 @@ router.use(auth);
 const saveAttendanceSchema = z.object({
   groupId: z.string().min(1),
   serviceNotes: z.string().optional().nullable(),
-  members: z.array(
-    z.object({
-      explorerId: z.string().min(1),
-      present: z.boolean(),
-      note: z.string().optional().nullable(),
-    })
-  ).min(1),
+  members: z
+    .array(
+      z.object({
+        explorerId: z.string().min(1),
+        present: z.boolean(),
+        note: z.string().optional().nullable(),
+      })
+    )
+    .min(1),
 });
 
 router.get("/group/:groupId", async (req, res) => {
@@ -96,11 +98,23 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ msg: "Grupo no encontrado" });
     }
 
+    const existingAttendance = await prisma.serviceAttendance.findFirst({
+      where: { groupId },
+    });
+
+    if (existingAttendance) {
+      return res.status(400).json({
+        msg: "La asistencia de este grupo ya fue registrada",
+      });
+    }
+
     const groupMemberIds = new Set(group.members.map((m) => m.explorerId));
     const invalidMember = members.find((m) => !groupMemberIds.has(m.explorerId));
 
     if (invalidMember) {
-      return res.status(400).json({ msg: "Hay miembros que no pertenecen al grupo" });
+      return res.status(400).json({
+        msg: "Hay miembros que no pertenecen al grupo",
+      });
     }
 
     const created = await prisma.$transaction(async (tx) => {
@@ -161,6 +175,41 @@ router.patch("/:id", async (req, res) => {
       return res.status(404).json({ msg: "Registro no encontrado" });
     }
 
+    const group = await prisma.serviceGroup.findUnique({
+      where: { id: groupId },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!group) {
+      return res.status(404).json({ msg: "Grupo no encontrado" });
+    }
+
+    const duplicatedAttendance = await prisma.serviceAttendance.findFirst({
+      where: {
+        groupId,
+        NOT: {
+          id: attendanceId,
+        },
+      },
+    });
+
+    if (duplicatedAttendance) {
+      return res.status(400).json({
+        msg: "Ese grupo ya tiene una asistencia registrada",
+      });
+    }
+
+    const groupMemberIds = new Set(group.members.map((m) => m.explorerId));
+    const invalidMember = members.find((m) => !groupMemberIds.has(m.explorerId));
+
+    if (invalidMember) {
+      return res.status(400).json({
+        msg: "Hay miembros que no pertenecen al grupo",
+      });
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       await tx.serviceAttendance.update({
         where: { id: attendanceId },
@@ -200,6 +249,35 @@ router.patch("/:id", async (req, res) => {
     res.json(updated);
   } catch (error) {
     console.error("Error updating service attendance:", error);
+    res.status(500).json({ msg: "Error interno del servidor" });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const attendanceId = req.params.id;
+
+    const existing = await prisma.serviceAttendance.findUnique({
+      where: { id: attendanceId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ msg: "Registro no encontrado" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.serviceAttendanceMember.deleteMany({
+        where: { attendanceId },
+      });
+
+      await tx.serviceAttendance.delete({
+        where: { id: attendanceId },
+      });
+    });
+
+    res.json({ ok: true, msg: "Registro eliminado correctamente" });
+  } catch (error) {
+    console.error("Error deleting service attendance:", error);
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });
