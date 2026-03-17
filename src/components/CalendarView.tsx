@@ -1,5 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../services/api";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import {
+  ArrowLeft,
+  Save,
+  Calendar as CalendarIcon,
+  CalendarPlus,
+  Trash2,
+  ClipboardCheck,
+} from "lucide-react";
+import { toast } from "sonner@2.0.3";
 
 type Meeting = {
   id: string;
@@ -9,6 +22,7 @@ type Meeting = {
 
 type CalendarViewProps = {
   onTakeAttendance: (meetingId: string) => void;
+  onBack: () => void;
 };
 
 function formatDateTimeLocal(date: Date) {
@@ -27,20 +41,21 @@ function formatDate(date: string) {
     month: "short",
     day: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 }
 
-export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
-
+export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
 
   const [form, setForm] = useState({
     date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)),
-    type: ""
+    type: "",
   });
+
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   const loadMeetings = async () => {
     try {
@@ -49,6 +64,7 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
       setMeetings(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error cargando reuniones:", error);
+      toast.error("No se pudieron cargar las reuniones");
     } finally {
       setLoading(false);
     }
@@ -61,25 +77,30 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.type.trim() || !form.date) return;
+    if (!form.type.trim() || !form.date) {
+      toast.error("Completa el tipo y la fecha de la reunión");
+      return;
+    }
 
     try {
       setSaving(true);
 
       await apiFetch("/calendar/meetings", {
         method: "POST",
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
+
+      toast.success("Reunión creada exitosamente");
 
       setForm({
         date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)),
-        type: ""
+        type: "",
       });
 
       await loadMeetings();
-
     } catch (error) {
       console.error("Error creando reunión:", error);
+      toast.error("No se pudo crear la reunión");
     } finally {
       setSaving(false);
     }
@@ -90,142 +111,162 @@ export function CalendarView({ onTakeAttendance }: CalendarViewProps) {
 
     try {
       await apiFetch(`/calendar/meetings/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
 
+      toast.success("Reunión eliminada");
       await loadMeetings();
     } catch (error) {
       console.error("Error eliminando reunión:", error);
+      toast.error("No se pudo eliminar la reunión");
     }
   };
 
+  const goToCreate = () => {
+    formRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      <header className="sticky top-0 z-10 border-b bg-white">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" onClick={onBack}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          Calendario
-        </h1>
+              <div>
+                <p className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-base text-transparent">
+                  Calendario
+                </p>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Crear y administrar reuniones del club
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-        <h2 className="text-lg font-semibold text-gray-900">
-          Nueva reunión
-        </h2>
-
-        <form onSubmit={handleCreate} className="mt-5 grid gap-4 md:grid-cols-3">
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Tipo de reunión
-            </label>
-
-            <input
-              type="text"
-              value={form.type}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, type: e.target.value }))
-              }
-              placeholder="Ej. Reunión general"
-              className="w-full rounded-xl border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Fecha y hora
-            </label>
-
-            <input
-              type="datetime-local"
-              value={form.date}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, date: e.target.value }))
-              }
-              className="w-full rounded-xl border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="flex items-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full rounded-xl bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
-            >
-              {saving ? "Guardando..." : "Guardar reunión"}
-            </button>
-          </div>
-
-        </form>
-
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
-        <h2 className="text-lg font-semibold text-gray-900">
-          Próximas reuniones
-        </h2>
-
-        <div className="mt-5 space-y-3">
-
-          {loading ? (
-            <p className="text-sm text-gray-500">Cargando...</p>
-
-          ) : meetings.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No hay reuniones registradas.
-            </p>
-
-          ) : (
-            meetings.map((meeting) => (
-
-              <div
-                key={meeting.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4"
-              >
-
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {meeting.type}
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    {formatDate(meeting.date)}
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-
-                  <button
-                    onClick={() => onTakeAttendance(meeting.id)}
-                    className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100"
-                  >
-                    Tomar asistencia
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(meeting.id)}
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Eliminar
-                  </button>
-
-                </div>
-
+                <p className="text-xs text-muted-foreground">
+                  Crear y administrar reuniones
+                </p>
               </div>
+            </div>
 
-            ))
-          )}
-
+            <Button type="button" onClick={goToCreate} className="hidden sm:inline-flex">
+              <CalendarPlus className="mr-2 h-4 w-4" />
+              Crear próxima reunión
+            </Button>
+          </div>
         </div>
+      </header>
 
-      </div>
+      <main className="px-4 py-5 pb-safe">
+        <div className="space-y-4">
+          
 
+          <Card ref={formRef} className="border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Nueva reunión
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="meetingType">Tipo de reunión *</Label>
+                  <Input
+                    id="meetingType"
+                    type="text"
+                    placeholder="Ej: Reunión General, Campamento, Actividad..."
+                    value={form.type}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, type: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="meetingDate">Fecha y hora *</Label>
+                  <Input
+                    id="meetingDate"
+                    type="datetime-local"
+                    value={form.date}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, date: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={saving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? "Guardando..." : "Guardar reunión"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Próximas reuniones
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Cargando reuniones...
+                </div>
+              ) : meetings.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No hay reuniones registradas.
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {meetings.map((meeting) => (
+                    <div key={meeting.id} className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {meeting.type}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(meeting.date)}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onTakeAttendance(meeting.id)}
+                          >
+                            <ClipboardCheck className="mr-2 h-4 w-4" />
+                            Tomar asistencia
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleDelete(meeting.id)}
+                            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 }
