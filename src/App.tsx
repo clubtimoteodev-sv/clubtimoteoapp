@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Sidebar } from "./components/Sidebar";
+import { MobileHeader } from "./components/MobileHeader";
 import { Login } from "./components/Login";
 import Home from "./components/Home";
 import { CalendarView } from "./components/CalendarView";
@@ -26,6 +27,7 @@ export default function App() {
     return localStorage.getItem("token") ? "home" : "login";
   });
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedExplorerId, setSelectedExplorerId] = useState<string | null>(null);
   const [selectedServiceGroupId, setSelectedServiceGroupId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export default function App() {
     setSelectedServiceGroupId(null);
     setSelectedMeetingId(null);
     setAttendanceReportSource("menu");
+    setIsSidebarOpen(false);
   };
 
   const handleSidebarNavigate = (section: string) => {
@@ -71,6 +74,7 @@ export default function App() {
     }
 
     setActiveSection(section);
+    setIsSidebarOpen(false);
   };
 
   const handleBackFromAttendanceReport = () => {
@@ -82,6 +86,25 @@ export default function App() {
     goHome();
   };
 
+  const getSectionTitle = () => {
+    const titles: Record<string, string> = {
+      home: "Dashboard",
+      calendar: "Calendario",
+      "personal-data": "Datos personales",
+      "explorers-list": "Exploradores",
+      "explorer-detail": "Detalle del explorador",
+      "attendance-taking": "Tomar asistencia",
+      "attendance-report": "Ver asistencia",
+      "service-schedule": "Grupos de servicio",
+      "service-schedule-creation": "Crear grupo",
+      "service-schedule-attendance": "Asistencia de servicio",
+      "service-schedule-report": "Reporte de servicio",
+      "finance-manager": "Finanzas",
+    };
+
+    return titles[activeSection] || "Dashboard";
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case "home":
@@ -90,6 +113,7 @@ export default function App() {
       case "calendar":
         return (
           <CalendarView
+            onBack={goHome}
             onTakeAttendance={(meetingId: string) => {
               setSelectedMeetingId(meetingId);
               setActiveSection("attendance-taking");
@@ -195,24 +219,25 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         activeSection={activeSection}
         onNavigate={handleSidebarNavigate}
         onLogout={handleLogout}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
-      <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="p-6">
-          {activeSection === "home" ? (
-            <div className="min-h-[calc(100vh-48px)] rounded-[28px] bg-gray-50 p-8">
-              {renderContent()}
-            </div>
-          ) : (
-            <div className="min-w-0">{renderContent()}</div>
-          )}
-        </div>
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <MobileHeader
+          onMenuClick={() => setIsSidebarOpen(true)}
+          title={getSectionTitle()}
+        />
+
+        <main className="flex-1 min-w-0 overflow-auto p-4 md:p-6 lg:p-8">
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 }
