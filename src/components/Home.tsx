@@ -135,7 +135,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
       <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div>
@@ -150,30 +150,30 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="space-y-6 px-4 py-5 pb-safe">
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Exploradores registrados</p>
-                <p className="mt-2 text-3xl font-semibold text-gray-900">
+      <main className="w-full overflow-x-hidden space-y-5 px-3 py-4 pb-safe sm:px-4 sm:py-5">
+        <section className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-gray-500">Exploradores registrados</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
                   {loading ? "..." : summary.explorersCount}
                 </p>
               </div>
 
-              <div className="rounded-xl bg-gray-100 p-3">
+              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
                 <Users className="h-5 w-5 text-gray-500" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Asistencia promedio mensual</p>
+          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-gray-500">Asistencia promedio mensual</p>
 
                 <p
-                  className={`mt-2 text-3xl font-semibold ${
+                  className={`mt-2 text-2xl font-semibold sm:text-3xl ${
                     summary.monthlyAttendanceAverage >= 80
                       ? "text-green-600"
                       : summary.monthlyAttendanceAverage >= 50
@@ -185,19 +185,19 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="rounded-xl bg-gray-100 p-3">
+              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
                 <CheckCircle2 className="h-5 w-5 text-gray-500" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md md:col-span-2 xl:col-span-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Balance financiero</p>
+          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6 md:col-span-2 xl:col-span-1">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-gray-500">Balance financiero</p>
 
                 <p
-                  className={`mt-2 text-3xl font-semibold ${
+                  className={`mt-2 text-2xl font-semibold sm:text-3xl ${
                     summary.balance > 0
                       ? "text-green-600"
                       : summary.balance < 0
@@ -209,15 +209,15 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="rounded-xl bg-gray-100 p-3">
+              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
                 <Wallet className="h-5 w-5 text-gray-500" />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="grid w-full min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <CalendarDays className="h-5 w-5 text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900">Próximas reuniones</h2>
@@ -235,17 +235,17 @@ export default function Home() {
                   {summary.upcomingMeetings.map((meeting) => (
                     <div
                       key={meeting.id}
-                      className="h-full rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                      className="h-full min-w-0 rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
                     >
                       <div className="flex h-full items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium text-gray-900">{meeting.type}</p>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-gray-900">{meeting.type}</p>
                           <p className="mt-1 text-sm text-gray-500">
                             {formatDate(meeting.date)}
                           </p>
                         </div>
 
-                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
+                        <span className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
                           Próxima
                         </span>
                       </div>
@@ -256,7 +256,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <UserPlus className="h-5 w-5 text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900">Exploradores recientes</h2>
@@ -274,9 +274,9 @@ export default function Home() {
                   {summary.recentExplorers.map((explorer) => (
                     <div
                       key={explorer.id}
-                      className="flex h-full items-center gap-3 rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                      className="flex h-full min-w-0 items-center gap-3 rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
                         {getInitials(explorer.nombre, explorer.apellidos)}
                       </div>
 
@@ -296,8 +296,8 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="grid w-full min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <Clock3 className="h-5 w-5 text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900">
@@ -358,7 +358,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <ReceiptText className="h-5 w-5 text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900">Transacciones recientes</h2>
@@ -379,7 +379,7 @@ export default function Home() {
                     return (
                       <div
                         key={movement.id}
-                        className="h-full rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
+                        className="h-full min-w-0 rounded-xl border border-gray-200 px-4 py-4 transition hover:bg-gray-50"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
