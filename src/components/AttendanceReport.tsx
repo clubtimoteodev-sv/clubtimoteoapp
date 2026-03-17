@@ -317,7 +317,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
     const justifiedCount = getJustifiedCount(currentRecords);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white-50 to-white-50">
         <header className="sticky top-0 z-10 border-b bg-white">
           <div className="px-4 py-4">
             <div className="flex items-center space-x-2">
@@ -463,7 +463,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
                             </p>
 
                             {isJustified && (
-                              <Badge className="border-0 bg-amber-100 text-xs text-amber-800">
+                              <Badge className="border-0 bg-white-100 text-xs text--800">
                                 Justificado
                               </Badge>
                             )}
@@ -540,7 +540,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white-50 to-white-50">
       <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div className="flex items-center space-x-2">
