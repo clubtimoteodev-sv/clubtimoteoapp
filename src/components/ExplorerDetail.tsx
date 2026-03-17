@@ -25,6 +25,8 @@ import {
   Users,
   ExternalLink,
   FileCheck2,
+  Hash,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 
@@ -189,6 +191,15 @@ export function ExplorerDetail({
     });
   };
 
+  const formatDateInputValue = (dateString?: string | null) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) {
+      return dateString.slice(0, 10);
+    }
+    return date.toISOString().split("T")[0];
+  };
+
   const getInitials = (nombre: string, apellidos: string) => {
     return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
   };
@@ -203,9 +214,6 @@ export function ExplorerDetail({
     return buildFileUrl(explorer?.fotoUrl || explorer?.foto || null) || undefined;
   };
 
-  const recetaLink = buildFileUrl(explorer?.recetaUrl);
-  const permisoLink = buildFileUrl(explorer?.permisoUrl);
-
   const handleEdit = () => {
     if (!explorer) return;
     setEditForm({ ...explorer });
@@ -215,6 +223,16 @@ export function ExplorerDetail({
   const handleCancelEdit = () => {
     setEditForm(null);
     setIsEditing(false);
+  };
+
+  const updateEditField = <K extends keyof Explorer>(field: K, value: Explorer[K]) => {
+    setEditForm((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -302,6 +320,15 @@ export function ExplorerDetail({
     );
   }
 
+  const recetaLink = buildFileUrl(current.recetaUrl);
+  const permisoLink = buildFileUrl(current.permisoUrl);
+
+  const inputClasses =
+    "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
+  const textareaClasses =
+    "mt-1 min-h-[90px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
+  const checkboxLabelClasses =
+    "flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700";
   const documentItemClasses =
     "flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 transition-colors hover:bg-gray-50";
 
@@ -331,33 +358,42 @@ export function ExplorerDetail({
             </div>
 
             {isEditing ? (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  className="border-gray-200 text-gray-700 hover:bg-gray-100"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveEdit}
-                  className="bg-gray-900 text-white hover:bg-gray-800"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-                className="border-gray-200 text-gray-700 hover:bg-gray-100"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            )}
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleCancelEdit}
+      className="border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+    >
+      <X className="mr-2 h-4 w-4" />
+      Cancelar
+    </Button>
+
+    <Button
+      type="button"
+      size="sm"
+      onClick={handleSaveEdit}
+      className="!border !border-green-600 !bg-green-600 !text-white shadow-sm hover:!bg-green-700"
+    >
+      <Save className="mr-2 h-4 w-4" />
+      Guardar
+    </Button>
+  </div>
+) : (
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    onClick={handleEdit}
+    className="border-gray-300 bg-white text-gray-800 hover:bg-gray-100"
+  >
+    <Edit className="mr-2 h-4 w-4" />
+    Editar
+  </Button>
+)}
+
+
           </div>
         </div>
       </header>
@@ -428,43 +464,143 @@ export function ExplorerDetail({
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Fecha de Nacimiento
-                    </p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {formatDate(current.fechaNacimiento)}
-                    </p>
-                  </div>
-                </div>
+                {isEditing ? (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Código de explorador
+                        </p>
+                        <div className="relative">
+                          
+                          <input
+                            className={`${inputClasses} pl-9`}
+                            value={editForm?.codigoExplorador || ""}
+                            onChange={(e) => updateEditField("codigoExplorador", e.target.value)}
+                            placeholder="Código"
+                          />
+                        </div>
+                      </div>
 
-                <Separator className="bg-gray-200" />
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Fecha de nacimiento
+                        </p>
+                        <input
+                          type="date"
+                          className={inputClasses}
+                          value={formatDateInputValue(editForm?.fechaNacimiento)}
+                          onChange={(e) => updateEditField("fechaNacimiento", e.target.value)}
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <Phone className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Teléfono
-                    </p>
-                    <p className="mt-1 text-sm text-gray-900">{current.telefono}</p>
-                  </div>
-                </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Nombre
+                        </p>
+                        <input
+                          className={inputClasses}
+                          value={editForm?.nombre || ""}
+                          onChange={(e) => updateEditField("nombre", e.target.value)}
+                          placeholder="Nombre"
+                        />
+                      </div>
 
-                <Separator className="bg-gray-200" />
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Apellidos
+                        </p>
+                        <input
+                          className={inputClasses}
+                          value={editForm?.apellidos || ""}
+                          onChange={(e) => updateEditField("apellidos", e.target.value)}
+                          placeholder="Apellidos"
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Dirección
-                    </p>
-                    <p className="mt-1 break-words text-sm text-gray-900">
-                      {current.direccion}
-                    </p>
-                  </div>
-                </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Teléfono
+                      </p>
+                      <input
+                        className={inputClasses}
+                        value={editForm?.telefono || ""}
+                        onChange={(e) => updateEditField("telefono", e.target.value)}
+                        placeholder="Teléfono"
+                      />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Dirección
+                      </p>
+                      <textarea
+                        className={textareaClasses}
+                        value={editForm?.direccion || ""}
+                        onChange={(e) => updateEditField("direccion", e.target.value)}
+                        placeholder="Dirección"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <Calendar className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Fecha de Nacimiento
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {formatDate(current.fechaNacimiento)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator className="bg-gray-200" />
+
+                    <div className="flex items-start gap-3">
+                      <Phone className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Teléfono
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">{current.telefono}</p>
+                      </div>
+                    </div>
+
+                    <Separator className="bg-gray-200" />
+
+                    <div className="flex items-start gap-3">
+                      <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Dirección
+                        </p>
+                        <p className="mt-1 break-words text-sm text-gray-900">
+                          {current.direccion}
+                        </p>
+                      </div>
+                    </div>
+
+                    {current.codigoExplorador && (
+                      <>
+                        <Separator className="bg-gray-200" />
+                        <div className="flex items-start gap-3">
+                          <Hash className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Código de explorador
+                            </p>
+                            <p className="mt-1 text-sm text-gray-900">{current.codigoExplorador}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -477,25 +613,189 @@ export function ExplorerDetail({
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Alergias
-                  </p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {current.alergias || "No registradas"}
-                  </p>
-                </div>
+                {isEditing ? (
+                  <>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Alergias
+                      </p>
+                      <textarea
+                        className={textareaClasses}
+                        value={editForm?.alergias || ""}
+                        onChange={(e) => updateEditField("alergias", e.target.value)}
+                        placeholder="Alergias"
+                      />
+                    </div>
 
-                <Separator className="bg-gray-200" />
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Medicina controlada
+                      </p>
+                      <textarea
+                        className={textareaClasses}
+                        value={editForm?.medicinaControlada || ""}
+                        onChange={(e) =>
+                          updateEditField("medicinaControlada", e.target.value)
+                        }
+                        placeholder="Medicina controlada"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Alergias
+                      </p>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {current.alergias || "No registradas"}
+                      </p>
+                    </div>
 
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Medicina controlada
-                  </p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {current.medicinaControlada || "No registrada"}
-                  </p>
-                </div>
+                    <Separator className="bg-gray-200" />
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Medicina controlada
+                      </p>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {current.medicinaControlada || "No registrada"}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                  <GraduationCap className="mr-2 h-4 w-4 text-gray-500" />
+                  Educación y Vida Cristiana
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {isEditing ? (
+                  <>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className={checkboxLabelClasses}>
+                        <input
+                          type="checkbox"
+                          checked={!!editForm?.estudia}
+                          onChange={(e) => updateEditField("estudia", e.target.checked)}
+                        />
+                        Estudia actualmente
+                      </label>
+
+                      <label className={checkboxLabelClasses}>
+                        <input
+                          type="checkbox"
+                          checked={!!editForm?.aceptoCristo}
+                          onChange={(e) => updateEditField("aceptoCristo", e.target.checked)}
+                        />
+                        Aceptó a Cristo
+                      </label>
+
+                      <label className={checkboxLabelClasses}>
+                        <input
+                          type="checkbox"
+                          checked={!!editForm?.bautizado}
+                          onChange={(e) => updateEditField("bautizado", e.target.checked)}
+                        />
+                        Bautizado en agua
+                      </label>
+
+                      <label className={checkboxLabelClasses}>
+                        <input
+                          type="checkbox"
+                          checked={!!editForm?.asisteCelula}
+                          onChange={(e) => updateEditField("asisteCelula", e.target.checked)}
+                        />
+                        Asiste a célula
+                      </label>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Nivel educativo
+                      </p>
+                      <input
+                        className={inputClasses}
+                        value={editForm?.nivelEducativo || ""}
+                        onChange={(e) => updateEditField("nivelEducativo", e.target.value)}
+                        placeholder="Nivel educativo"
+                      />
+                    </div>
+
+                    {editForm?.asisteCelula && (
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Nombre del líder de célula
+                        </p>
+                        <input
+                          className={inputClasses}
+                          value={editForm?.nombreLiderCelula || ""}
+                          onChange={(e) =>
+                            updateEditField("nombreLiderCelula", e.target.value)
+                          }
+                          placeholder="Nombre del líder de célula"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Estudia
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {current.estudia ? "Sí" : "No"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Nivel educativo
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {current.nivelEducativo || "No registrado"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Aceptó a Cristo
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {current.aceptoCristo ? "Sí" : "No"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Bautizado
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {current.bautizado ? "Sí" : "No"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 md:col-span-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Líder de célula
+                        </p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {current.asisteCelula
+                            ? current.nombreLiderCelula || "No registrado"
+                            : "No asiste a célula"}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -508,25 +808,59 @@ export function ExplorerDetail({
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Nombre del responsable
-                  </p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {current.nombreResponsable}
-                  </p>
-                </div>
+                {isEditing ? (
+                  <>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Nombre del responsable
+                      </p>
+                      <input
+                        className={inputClasses}
+                        value={editForm?.nombreResponsable || ""}
+                        onChange={(e) =>
+                          updateEditField("nombreResponsable", e.target.value)
+                        }
+                        placeholder="Nombre del responsable"
+                      />
+                    </div>
 
-                <Separator className="bg-gray-200" />
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Teléfono del responsable
+                      </p>
+                      <input
+                        className={inputClasses}
+                        value={editForm?.telefonoResponsable || ""}
+                        onChange={(e) =>
+                          updateEditField("telefonoResponsable", e.target.value)
+                        }
+                        placeholder="Teléfono del responsable"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Nombre del responsable
+                      </p>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {current.nombreResponsable}
+                      </p>
+                    </div>
 
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Teléfono del responsable
-                  </p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {current.telefonoResponsable}
-                  </p>
-                </div>
+                    <Separator className="bg-gray-200" />
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Teléfono del responsable
+                      </p>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {current.telefonoResponsable}
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -610,6 +944,8 @@ export function ExplorerDetail({
                     <span className="text-xs text-gray-400">Sin archivo</span>
                   )}
                 </div>
+
+                
               </CardContent>
             </Card>
           </TabsContent>

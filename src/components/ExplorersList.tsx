@@ -237,19 +237,19 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
 
                     {explorer.aceptoCristo && (
                       <Badge variant="secondary" className="border-0 bg-green-100 text-xs text-green-800">
-                        Cristo
+                        Acepto a Cristo
                       </Badge>
                     )}
 
                     {explorer.bautizado && (
                       <Badge variant="secondary" className="border-0 bg-blue-100 text-xs text-blue-800">
-                        Bautizado
+                        Esta Bautizado
                       </Badge>
                     )}
 
                     {explorer.asisteCelula && (
                       <Badge variant="secondary" className="border-0 bg-purple-100 text-xs text-purple-800">
-                        Célula
+                        Asiste a Célula
                       </Badge>
                     )}
 
