@@ -11,7 +11,7 @@ const createMeetingSchema = z.object({
   type: z.string().min(1)
 });
 
-router.get("/upcoming", async (_req, res) => {
+router.get("/upcoming", async (req, res) => {
   try {
     const now = new Date();
 
@@ -19,7 +19,8 @@ router.get("/upcoming", async (_req, res) => {
       where: {
         date: {
           gte: now
-        }
+        },
+        destacamentoId: req.user.destacamentoId // FILTRO: Solo reuniones futuras de tu iglesia
       },
       orderBy: {
         date: "asc"
@@ -46,7 +47,8 @@ router.post("/meetings", async (req, res) => {
     const meeting = await prisma.meeting.create({
       data: {
         date: new Date(data.date),
-        type: data.type
+        type: data.type,
+        destacamentoId: req.user.destacamentoId // ASIGNACIÓN: Etiqueta la reunión con tu iglesia
       }
     });
 
@@ -61,12 +63,16 @@ router.delete("/meetings/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
-    const existing = await prisma.meeting.findUnique({
-      where: { id }
+    // SEGURIDAD: Validar que exista y que pertenezca a la iglesia del usuario que quiere borrarla
+    const existing = await prisma.meeting.findFirst({
+      where: { 
+        id,
+        destacamentoId: req.user.destacamentoId 
+      }
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "Reunión no encontrada" });
+      return res.status(404).json({ msg: "Reunión no encontrada o no tienes permiso para borrarla" });
     }
 
     await prisma.meeting.delete({

@@ -24,6 +24,13 @@ router.get("/group/:groupId", async (req, res) => {
   try {
     const groupId = req.params.groupId;
 
+    // SEGURIDAD: Verificar que el grupo sea de la iglesia del usuario
+    const group = await prisma.serviceGroup.findFirst({
+      where: { id: groupId, destacamentoId: req.user.destacamentoId }
+    });
+
+    if(!group) return res.status(403).json({ msg: "No tienes acceso a este grupo" });
+
     const records = await prisma.serviceAttendance.findMany({
       where: { groupId },
       orderBy: { takenAt: "desc" },
@@ -66,8 +73,9 @@ router.get("/:id", async (req, res) => {
       },
     });
 
-    if (!record) {
-      return res.status(404).json({ msg: "Registro no encontrado" });
+    // SEGURIDAD: Validar que el registro pertenezca a un grupo de la iglesia del usuario
+    if (!record || record.group.destacamentoId !== req.user.destacamentoId) {
+      return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
     }
 
     res.json(record);
@@ -87,15 +95,16 @@ router.post("/", async (req, res) => {
 
     const { groupId, serviceNotes, members } = parsed.data;
 
-    const group = await prisma.serviceGroup.findUnique({
-      where: { id: groupId },
+    // SEGURIDAD: Validar propiedad del grupo
+    const group = await prisma.serviceGroup.findFirst({
+      where: { id: groupId, destacamentoId: req.user.destacamentoId },
       include: {
         members: true,
       },
     });
 
     if (!group) {
-      return res.status(404).json({ msg: "Grupo no encontrado" });
+      return res.status(404).json({ msg: "Grupo no encontrado o sin permiso" });
     }
 
     const existingAttendance = await prisma.serviceAttendance.findFirst({
@@ -175,15 +184,16 @@ router.patch("/:id", async (req, res) => {
       return res.status(404).json({ msg: "Registro no encontrado" });
     }
 
-    const group = await prisma.serviceGroup.findUnique({
-      where: { id: groupId },
+    // SEGURIDAD: Validar propiedad del grupo
+    const group = await prisma.serviceGroup.findFirst({
+      where: { id: groupId, destacamentoId: req.user.destacamentoId },
       include: {
         members: true,
       },
     });
 
     if (!group) {
-      return res.status(404).json({ msg: "Grupo no encontrado" });
+      return res.status(404).json({ msg: "Grupo no encontrado o sin permiso" });
     }
 
     const duplicatedAttendance = await prisma.serviceAttendance.findFirst({
@@ -259,10 +269,12 @@ router.delete("/:id", async (req, res) => {
 
     const existing = await prisma.serviceAttendance.findUnique({
       where: { id: attendanceId },
+      include: { group: true } // Incluimos el grupo para verificar la iglesia
     });
 
-    if (!existing) {
-      return res.status(404).json({ msg: "Registro no encontrado" });
+    // SEGURIDAD: Verificar que exista y sea de la iglesia del usuario
+    if (!existing || existing.group.destacamentoId !== req.user.destacamentoId) {
+      return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
     }
 
     await prisma.$transaction(async (tx) => {

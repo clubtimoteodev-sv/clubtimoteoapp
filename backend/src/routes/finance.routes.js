@@ -20,7 +20,8 @@ router.get("/", async (req, res) => {
   try {
     const { type, category, startDate, endDate, q } = req.query;
 
-    const where = {};
+    // SEGURIDAD: Inicializamos el where obligando a buscar solo en la iglesia actual
+    const where = { destacamentoId: req.user.destacamentoId };
 
     if (type && type !== "all") {
       where.type = type;
@@ -42,10 +43,15 @@ router.get("/", async (req, res) => {
 
     if (q && String(q).trim()) {
       const term = String(q).trim();
-      where.OR = [
-        { description: { contains: term, mode: "insensitive" } },
-        { recipient: { contains: term, mode: "insensitive" } },
-        { category: { contains: term, mode: "insensitive" } },
+      // Mantenemos el filtro de búsqueda dentro de los datos de la iglesia
+      where.AND = [
+        {
+          OR: [
+            { description: { contains: term, mode: "insensitive" } },
+            { recipient: { contains: term, mode: "insensitive" } },
+            { category: { contains: term, mode: "insensitive" } },
+          ],
+        }
       ];
     }
 
@@ -63,12 +69,16 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const movement = await prisma.financeMovement.findUnique({
-      where: { id: req.params.id },
+    // SEGURIDAD: findFirst para incluir la validación de la iglesia
+    const movement = await prisma.financeMovement.findFirst({
+      where: { 
+        id: req.params.id,
+        destacamentoId: req.user.destacamentoId
+      },
     });
 
     if (!movement) {
-      return res.status(404).json({ msg: "Movimiento no encontrado" });
+      return res.status(404).json({ msg: "Movimiento no encontrado o no tienes permiso" });
     }
 
     res.json(movement);
@@ -97,6 +107,7 @@ router.post("/", async (req, res) => {
         date: new Date(data.date),
         recipient: data.recipient,
         receiptUrl: data.receiptUrl || null,
+        destacamentoId: req.user.destacamentoId // ASIGNACIÓN: Sella el movimiento a la iglesia
       },
     });
 
@@ -115,12 +126,13 @@ router.patch("/:id", async (req, res) => {
       return res.status(400).json(parsed.error);
     }
 
-    const existing = await prisma.financeMovement.findUnique({
-      where: { id: req.params.id },
+    // SEGURIDAD: Verificar que sea de la iglesia antes de actualizar
+    const existing = await prisma.financeMovement.findFirst({
+      where: { id: req.params.id, destacamentoId: req.user.destacamentoId },
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "Movimiento no encontrado" });
+      return res.status(404).json({ msg: "Movimiento no encontrado o sin permiso" });
     }
 
     const data = parsed.data;
@@ -147,12 +159,13 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const existing = await prisma.financeMovement.findUnique({
-      where: { id: req.params.id },
+    // SEGURIDAD: Verificar que sea de la iglesia antes de borrar
+    const existing = await prisma.financeMovement.findFirst({
+      where: { id: req.params.id, destacamentoId: req.user.destacamentoId },
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "Movimiento no encontrado" });
+      return res.status(404).json({ msg: "Movimiento no encontrado o sin permiso" });
     }
 
     await prisma.financeMovement.delete({

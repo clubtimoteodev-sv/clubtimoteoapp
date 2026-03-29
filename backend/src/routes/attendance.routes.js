@@ -19,9 +19,11 @@ const saveAttendanceSchema = z.object({
   ).min(1)
 });
 
-router.get("/meetings", async (_req, res) => {
+router.get("/meetings", async (req, res) => {
   try {
     const meetings = await prisma.meeting.findMany({
+      // FILTRO: Solo trae las reuniones de la iglesia del usuario
+      where: { destacamentoId: req.user.destacamentoId }, 
       include: {
         records: {
           include: {
@@ -41,8 +43,11 @@ router.get("/meetings", async (_req, res) => {
 
 router.get("/meetings/:id", async (req, res) => {
   try {
-    const meeting = await prisma.meeting.findUnique({
-      where: { id: req.params.id },
+    const meeting = await prisma.meeting.findFirst({
+      where: { 
+        id: req.params.id,
+        destacamentoId: req.user.destacamentoId // SEGURIDAD: Evita espiar otras iglesias
+      },
       include: {
         records: {
           include: {
@@ -84,11 +89,18 @@ router.post("/", async (req, res) => {
       const meeting = await prisma.meeting.create({
         data: {
           date: new Date(data.date),
-          type: data.meetingType
+          type: data.meetingType,
+          destacamentoId: req.user.destacamentoId // ASIGNACIÓN: Sella la reunión con la iglesia
         }
       });
 
       meetingId = meeting.id;
+    } else {
+      // Si actualiza, verificamos que la reunión sea de su iglesia
+      const existing = await prisma.meeting.findFirst({
+        where: { id: meetingId, destacamentoId: req.user.destacamentoId }
+      });
+      if (!existing) return res.status(403).json({ msg: "Acceso denegado a esta reunión" });
     }
 
     await prisma.attendanceRecord.deleteMany({
@@ -133,6 +145,12 @@ router.patch("/meetings/:id", async (req, res) => {
     const meetingId = req.params.id;
     const data = parsed.data;
 
+    // SEGURIDAD: Verificar propiedad
+    const meeting = await prisma.meeting.findFirst({
+      where: { id: meetingId, destacamentoId: req.user.destacamentoId }
+    });
+    if (!meeting) return res.status(404).json({ msg: "Reunión no encontrada" });
+
     await prisma.attendanceRecord.deleteMany({
       where: { meetingId }
     });
@@ -166,6 +184,13 @@ router.patch("/meetings/:id", async (req, res) => {
 
 router.get("/explorer/:explorerId", async (req, res) => {
   try {
+    // SEGURIDAD: Verifica que el niño pertenezca a la iglesia del usuario
+    const explorer = await prisma.explorer.findFirst({
+      where: { id: req.params.explorerId, destacamentoId: req.user.destacamentoId }
+    });
+    
+    if (!explorer) return res.status(404).json({ msg: "Explorador no encontrado en tu destacamento" });
+
     const records = await prisma.attendanceRecord.findMany({
       where: {
         explorerId: req.params.explorerId
@@ -190,15 +215,18 @@ router.get("/explorer/:explorerId", async (req, res) => {
 
 router.delete("/meetings/:id", async (req, res) => {
   try {
-
     const meetingId = req.params.id;
 
-    // borrar registros de asistencia primero
+    // SEGURIDAD: Verificar propiedad antes de borrar
+    const meeting = await prisma.meeting.findFirst({
+      where: { id: meetingId, destacamentoId: req.user.destacamentoId }
+    });
+    if (!meeting) return res.status(404).json({ msg: "Reunión no encontrada o sin permiso" });
+
     await prisma.attendanceRecord.deleteMany({
       where: { meetingId }
     });
 
-    // borrar la reunión
     await prisma.meeting.delete({
       where: { id: meetingId }
     });
@@ -210,6 +238,5 @@ router.delete("/meetings/:id", async (req, res) => {
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });
-
 
 export default router;

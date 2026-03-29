@@ -12,9 +12,11 @@ const createServiceGroupSchema = z.object({
   memberIds: z.array(z.string().min(1)).min(1),
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
     const groups = await prisma.serviceGroup.findMany({
+      // SEGURIDAD: Solo traer los grupos de la iglesia actual
+      where: { destacamentoId: req.user.destacamentoId },
       orderBy: { date: "desc" },
       include: {
         members: {
@@ -57,8 +59,9 @@ router.get("/:id", async (req, res) => {
       },
     });
 
-    if (!group) {
-      return res.status(404).json({ msg: "Grupo no encontrado" });
+    // SEGURIDAD: Verificar que el grupo exista y pertenezca a la iglesia del usuario
+    if (!group || group.destacamentoId !== req.user.destacamentoId) {
+      return res.status(404).json({ msg: "Grupo no encontrado o no tienes permiso" });
     }
 
     res.json(group);
@@ -78,15 +81,17 @@ router.post("/", async (req, res) => {
 
     const { date, day, memberIds } = parsed.data;
 
+    // Verificar que los exploradores existan Y PERTENEZCAN a la misma iglesia
     const explorers = await prisma.explorer.findMany({
       where: {
         id: { in: memberIds },
+        destacamentoId: req.user.destacamentoId
       },
       select: { id: true },
     });
 
     if (explorers.length !== memberIds.length) {
-      return res.status(400).json({ msg: "Uno o más exploradores no existen" });
+      return res.status(400).json({ msg: "Uno o más exploradores no existen en tu iglesia" });
     }
 
     const group = await prisma.$transaction(async (tx) => {
@@ -94,6 +99,7 @@ router.post("/", async (req, res) => {
         data: {
           date: new Date(date),
           day,
+          destacamentoId: req.user.destacamentoId // ASIGNACIÓN: Sella el grupo con la iglesia
         },
       });
 
@@ -136,12 +142,26 @@ router.patch("/:id", async (req, res) => {
 
     const { date, day, memberIds } = parsed.data;
 
-    const existing = await prisma.serviceGroup.findUnique({
-      where: { id },
+    // SEGURIDAD: Verificar propiedad antes de actualizar
+    const existing = await prisma.serviceGroup.findFirst({
+      where: { id, destacamentoId: req.user.destacamentoId },
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "Grupo no encontrado" });
+      return res.status(404).json({ msg: "Grupo no encontrado o sin permiso" });
+    }
+    
+     // Verificar exploradores de nuevo
+    const explorers = await prisma.explorer.findMany({
+      where: {
+        id: { in: memberIds },
+        destacamentoId: req.user.destacamentoId
+      },
+      select: { id: true },
+    });
+
+    if (explorers.length !== memberIds.length) {
+       return res.status(400).json({ msg: "Uno o más exploradores no existen en tu iglesia" });
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -188,12 +208,13 @@ router.delete("/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
-    const existing = await prisma.serviceGroup.findUnique({
-      where: { id },
+    // SEGURIDAD: Verificar propiedad antes de borrar
+    const existing = await prisma.serviceGroup.findFirst({
+      where: { id, destacamentoId: req.user.destacamentoId },
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "Grupo no encontrado" });
+      return res.status(404).json({ msg: "Grupo no encontrado o sin permiso" });
     }
 
     await prisma.serviceGroup.delete({
