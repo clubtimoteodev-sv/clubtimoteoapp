@@ -7,91 +7,134 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Destacamento {
+  id                String   @id @default(cuid())
+  codigo            String   @unique
+  nombre            String
+  iglesia           String?
+  direccion         String?
+  ciudad            String?
+  telefono          String?
+  encargado         String?
+  createdAt         DateTime @default(now())
+
+  users             User[]
+  explorers         Explorer[]
+  meetings          Meeting[]
+  financeMovements  FinanceMovement[]
+  serviceGroups     ServiceGroup[]
+}
+
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
+  id               String        @id @default(cuid())
+  name             String
+  email            String        @unique
+  password         String
+  role             String        @default("admin")
+  destacamentoId   String
+  createdAt        DateTime      @default(now())
+
+  destacamento     Destacamento  @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+
+  @@index([destacamentoId])
 }
 
 model Explorer {
-  id                  String   @id @default(cuid())
-  codigoExplorador    String   @unique
-  nombre              String
-  apellidos           String
-  fechaNacimiento     DateTime
-  direccion           String
-  telefono            String
+  id                       String   @id @default(cuid())
+  codigoInterno            String
+  nombre                   String
+  apellidos                String
+  fechaNacimiento          DateTime
+  direccion                String
+  telefono                 String
 
-  alergias            String?
-  medicinaControlada  String?
-  estudia             Boolean
-  nivelEducativo      String?
+  alergias                 String?
+  medicinaControlada       String?
+  estudia                  Boolean
+  nivelEducativo           String?
 
-  nombreResponsable   String
-  telefonoResponsable String
+  nombreResponsable        String
+  telefonoResponsable      String
 
-  aceptoCristo        Boolean
-  bautizado           Boolean
-  asisteCelula        Boolean
-  nombreLiderCelula   String?
+  aceptoCristo             Boolean
+  bautizado                Boolean
+  asisteCelula             Boolean
+  nombreLiderCelula        String?
 
-  fotoUrl             String?
-  recetaUrl           String?
-  permisoUrl          String?
+  fotoUrl                  String?
+  recetaUrl                String?
+  permisoUrl               String?
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  destacamentoId           String
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  attendanceRecords   AttendanceRecord[]
-  serviceMembers      ServiceGroupMember[]
+  destacamento             Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  attendanceRecords        AttendanceRecord[]
+  serviceMembers           ServiceGroupMember[]
   serviceAttendanceMembers ServiceAttendanceMember[]
+
+  @@unique([destacamentoId, codigoInterno])
+  @@index([destacamentoId])
 }
 
 model Meeting {
-  id        String   @id @default(cuid())
-  date      DateTime
-  type      String
-  createdAt DateTime @default(now())
-  records   AttendanceRecord[]
+  id               String        @id @default(cuid())
+  date             DateTime
+  type             String
+  destacamentoId   String
+  createdAt        DateTime      @default(now())
+
+  destacamento     Destacamento  @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  records          AttendanceRecord[]
+
+  @@index([destacamentoId])
 }
 
 model AttendanceRecord {
-  id            String   @id @default(cuid())
-  meetingId     String
-  explorerId    String
-  attended      Boolean
-  justification String?
+  id             String   @id @default(cuid())
+  meetingId      String
+  explorerId     String
+  attended       Boolean
+  justification  String?
 
-  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  explorer  Explorer @relation(fields: [explorerId], references: [id], onDelete: Cascade)
+  meeting        Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  explorer       Explorer @relation(fields: [explorerId], references: [id], onDelete: Cascade)
 
   @@unique([meetingId, explorerId])
   @@index([explorerId])
+  @@index([meetingId])
 }
 
 model FinanceMovement {
-  id          String   @id @default(cuid())
-  type        String
-  amount      Decimal  @db.Decimal(12,2)
-  category    String
-  description String
-  date        DateTime
-  recipient   String
-  receiptUrl  String?
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  type             String
+  amount           Decimal  @db.Decimal(12,2)
+  category         String
+  description      String
+  date             DateTime
+  recipient        String
+  receiptUrl       String?
+  destacamentoId   String
+  createdAt        DateTime @default(now())
+
+  destacamento     Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+
+  @@index([destacamentoId])
 }
 
 model ServiceGroup {
-  id        String   @id @default(cuid())
-  date      DateTime
-  day       String
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  date             DateTime
+  day              String
+  destacamentoId   String
+  createdAt        DateTime @default(now())
 
-  members     ServiceGroupMember[]
-  attendances ServiceAttendance[]
+  destacamento     Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  members          ServiceGroupMember[]
+  attendances      ServiceAttendance[]
+
+  @@index([destacamentoId])
 }
 
 model ServiceGroupMember {
@@ -99,20 +142,23 @@ model ServiceGroupMember {
   groupId    String
   explorerId String
 
-  group    ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  explorer Explorer     @relation(fields: [explorerId], references: [id], onDelete: Cascade)
+  group      ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  explorer   Explorer     @relation(fields: [explorerId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, explorerId])
+  @@index([explorerId])
 }
 
 model ServiceAttendance {
   id           String   @id @default(cuid())
-  groupId      String
-  takenAt      DateTime @default(now())
-  serviceNotes String?
+  groupId       String
+  takenAt       DateTime @default(now())
+  serviceNotes  String?
 
-  group    ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  members  ServiceAttendanceMember[]
+  group         ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  members       ServiceAttendanceMember[]
+
+  @@index([groupId])
 }
 
 model ServiceAttendanceMember {
@@ -122,8 +168,9 @@ model ServiceAttendanceMember {
   present       Boolean
   note          String?
 
-  attendance ServiceAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  explorer   Explorer          @relation(fields: [explorerId], references: [id], onDelete: Cascade)
+  attendance    ServiceAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  explorer      Explorer          @relation(fields: [explorerId], references: [id], onDelete: Cascade)
 
   @@unique([attendanceId, explorerId])
+  @@index([explorerId])
 }

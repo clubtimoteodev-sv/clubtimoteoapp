@@ -9,7 +9,7 @@ import { ArrowLeft, Search, UserPlus, Eye, FileText } from "lucide-react";
 
 interface Explorer {
   id: string;
-  codigoExplorador?: string | null;
+  codigoInterno?: string | null;
   nombre: string;
   apellidos: string;
   fechaNacimiento: string;
@@ -59,7 +59,7 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
     const term = searchTerm.toLowerCase().trim();
 
     const haystack = [
-      explorer.codigoExplorador || "",
+      explorer.codigoInterno || "",
       explorer.nombre || "",
       explorer.apellidos || "",
       `${explorer.nombre} ${explorer.apellidos}`,
@@ -197,9 +197,9 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
                         {calculateAge(explorer.fechaNacimiento)} años
                       </p>
 
-                      {explorer.codigoExplorador && (
+                      {explorer.codigoInterno && (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Código: {explorer.codigoExplorador}
+                          Código: {explorer.codigoInterno}
                         </p>
                       )}
                     </div>

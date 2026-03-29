@@ -7,7 +7,7 @@ const router = Router();
 router.use(auth);
 
 const createSchema = z.object({
-  codigoExplorador: z.string().min(1),
+  codigoInterno: z.string().min(1),
   nombre: z.string().min(1),
   apellidos: z.string().min(1),
   fechaNacimiento: z.string(),
@@ -32,12 +32,19 @@ const createSchema = z.object({
   permisoUrl: z.string().optional().nullable()
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
+    console.log("1. Usuario leyendo token:", req.user); // Veremos si el token trae el destacamentoId
+    
+    const destacamentoId = req.user.destacamentoId;
+    
     const list = await prisma.explorer.findMany({
+      where: { destacamentoId },
       orderBy: { createdAt: "desc" }
     });
 
+    console.log(`2. Se encontraron ${list.length} exploradores para la iglesia ${destacamentoId}`); // Veremos cuántos niños encontró Prisma
+    
     res.json(list);
   } catch (error) {
     console.error("Error getting explorers:", error);
@@ -48,9 +55,13 @@ router.get("/", async (_req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
+    const destacamentoId = req.user.destacamentoId;
 
     const explorer = await prisma.explorer.findUnique({
-      where: { id }
+      where: { 
+        id,
+        destacamentoId 
+      }
     });
 
     if (!explorer) {
@@ -66,6 +77,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    const destacamentoId = req.user.destacamentoId;
     const parsed = createSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -77,13 +89,17 @@ router.post("/", async (req, res) => {
     const explorer = await prisma.explorer.create({
       data: {
         ...data,
-        fechaNacimiento: new Date(data.fechaNacimiento)
+        fechaNacimiento: new Date(data.fechaNacimiento),
+        destacamentoId // Se asigna automáticamente la iglesia del usuario
       }
     });
 
     res.status(201).json(explorer);
   } catch (error) {
     console.error("Error creating explorer:", error);
+    if (error.code === 'P2002') {
+      return res.status(400).json({ msg: "El código interno ya existe en este destacamento" });
+    }
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });
@@ -91,6 +107,7 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const id = req.params.id;
+    const destacamentoId = req.user.destacamentoId;
 
     const parsed = createSchema.partial().safeParse(req.body);
 
@@ -105,11 +122,14 @@ router.patch("/:id", async (req, res) => {
     }
 
     const existing = await prisma.explorer.findUnique({
-      where: { id }
+      where: { 
+        id,
+        destacamentoId 
+      }
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "No encontrado" });
+      return res.status(404).json({ msg: "No encontrado o no pertenece a este destacamento" });
     }
 
     const updated = await prisma.explorer.update({
@@ -120,6 +140,9 @@ router.patch("/:id", async (req, res) => {
     res.json(updated);
   } catch (error) {
     console.error("Error updating explorer:", error);
+    if (error.code === 'P2002') {
+      return res.status(400).json({ msg: "El código interno ya existe" });
+    }
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });
@@ -127,13 +150,17 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const id = req.params.id;
+    const destacamentoId = req.user.destacamentoId;
 
     const existing = await prisma.explorer.findUnique({
-      where: { id }
+      where: { 
+        id,
+        destacamentoId
+      }
     });
 
     if (!existing) {
-      return res.status(404).json({ msg: "No encontrado" });
+      return res.status(404).json({ msg: "No encontrado o no pertenece a este destacamento" });
     }
 
     await prisma.explorer.delete({

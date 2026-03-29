@@ -35,7 +35,14 @@ export function Login({ onLogin }: LoginProps) {
         })
       });
 
+      // Guardamos el token
       localStorage.setItem("token", data.token);
+      
+      // AGREGADO: Si el backend envía la info del usuario, la guardamos
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
       onLogin(data.token);
 
     } catch (err) {

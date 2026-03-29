@@ -32,7 +32,7 @@ import { toast } from "sonner@2.0.3";
 
 interface Explorer {
   id: string;
-  codigoExplorador?: string | null;
+  codigoInterno?: string | null;
   nombre: string;
   apellidos: string;
   fechaNacimiento: string;
@@ -240,7 +240,7 @@ export function ExplorerDetail({
 
     try {
       const payload = {
-        codigoExplorador: editForm.codigoExplorador || null,
+        codigoInterno: editForm.codigoInterno || null,
         nombre: editForm.nombre,
         apellidos: editForm.apellidos,
         fechaNacimiento: editForm.fechaNacimiento,
@@ -469,14 +469,14 @@ export function ExplorerDetail({
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                          Código de explorador
+                          Código interno
                         </p>
                         <div className="relative">
                           
                           <input
                             className={`${inputClasses} pl-9`}
-                            value={editForm?.codigoExplorador || ""}
-                            onChange={(e) => updateEditField("codigoExplorador", e.target.value)}
+                            value={editForm?.codigoInterno || ""}
+                            onChange={(e) => updateEditField("codigoInterno", e.target.value)}
                             placeholder="Código"
                           />
                         </div>
@@ -585,16 +585,16 @@ export function ExplorerDetail({
                       </div>
                     </div>
 
-                    {current.codigoExplorador && (
+                    {current.codigoInterno && (
                       <>
                         <Separator className="bg-gray-200" />
                         <div className="flex items-start gap-3">
                           <Hash className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Código de explorador
+                              Código interno
                             </p>
-                            <p className="mt-1 text-sm text-gray-900">{current.codigoExplorador}</p>
+                            <p className="mt-1 text-sm text-gray-900">{current.codigoInterno}</p>
                           </div>
                         </div>
                       </>
