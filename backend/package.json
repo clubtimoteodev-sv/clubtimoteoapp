@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "npx prisma migrate deploy && node src/index.js",
-    "postinstall": "npx prisma generate",
+    "postinstall": "npx prisma@6 generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"
   },
@@ -24,3 +24,4 @@
     "nodemon": "^3.1.14"
   }
 }
+
