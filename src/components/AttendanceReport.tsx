@@ -95,6 +95,7 @@ function normalizeMeetingType(type: string) {
 export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportProps) {
   const [meetings, setMeetings] = useState<MeetingView[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingView | null>(null);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [loadingMeetings, setLoadingMeetings] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -577,17 +578,35 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
 
       <main className="px-4 py-5 pb-safe">
         <Card className="mb-4 border">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm">
+          <div
+            className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+          >
+            <div className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
-              Filtros
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Filtra por tipo de reunión o rango de fechas
-            </CardDescription>
-          </CardHeader>
+              <div>
+                <CardTitle className="text-base">Filtros</CardTitle>
+                <CardDescription className="text-xs">
+                  Filtra por tipo o rango de fechas
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: isFiltersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                >
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </Button>
+            </div>
+          </div>
 
-          <CardContent className="space-y-3">
+          {isFiltersOpen && (
+            <CardContent className="space-y-3 border-t pt-4">
             <div className="space-y-2">
               <Label className="text-xs">Periodo</Label>
 
@@ -608,7 +627,8 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
             <p className="text-xs text-muted-foreground">
               Resultados: {filteredMeetings.length}
             </p>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {loadingMeetings ? (

@@ -92,6 +92,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
   const [editId, setEditId] = useState<string | null>(null);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const [newMovement, setNewMovement] = useState(initialForm);
 
@@ -382,220 +383,50 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f8fafc 0%, #ecfdf5 50%, #f0fdfa 100%)" }}>
-      {/* Inner header — only for desktop (mobile uses MobileHeader from App) */}
-      {isDesktop && (
-      <header style={{ background: "white", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        {/* Inner header — only for desktop (mobile uses MobileHeader from App) */}
+        {isDesktop && (
+        <header style={{ background: "white", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={onBack}
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}
+              >
+                <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+                Volver
+              </button>
+              <div>
+                <p style={{ fontSize: "1rem", fontWeight: 700, color: "#1e293b" }}>Finanzas</p>
+                <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Gestión de ingresos y gastos</p>
+              </div>
+            </div>
+
+            <DialogTrigger asChild>
+              <Button
+                className="bg-gradient-to-r from-emerald-600 to-teal-600"
+                onClick={openCreateDialog}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo
+              </Button>
+            </DialogTrigger>
+          </div>
+        </header>
+        )}
+
+        {/* Mobile back + new button row */}
+        {!isDesktop && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
             <button
               type="button"
               onClick={onBack}
-              style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}
+              style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
             >
-              <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+              <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
               Volver
             </button>
-            <div>
-              <p style={{ fontSize: "1rem", fontWeight: 700, color: "#1e293b" }}>Finanzas</p>
-              <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Gestión de ingresos y gastos</p>
-            </div>
-          </div>
-
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600"
-                  onClick={openCreateDialog}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo
-                </Button>
-              </DialogTrigger>
-
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>{editId ? "Editar movimiento" : "Nuevo movimiento"}</DialogTitle>
-                  <DialogDescription>
-                    Registra ingresos, gastos y recibos.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleSaveMovement} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Tipo</Label>
-                    <Select
-                      value={newMovement.type}
-                      onValueChange={(value: MovementType) =>
-                        setNewMovement((prev) => ({
-                          ...prev,
-                          type: value,
-                          category: "",
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="entrada">Entrada</SelectItem>
-                        <SelectItem value="salida">Salida</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Monto</Label>
-                      <Input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={newMovement.amount}
-                        onChange={(e) =>
-                          setNewMovement((prev) => ({ ...prev, amount: e.target.value }))
-                        }
-                        placeholder="0.00"
-                        className="h-11"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Categoría</Label>
-                      <Select
-                        value={newMovement.category}
-                        onValueChange={(value) =>
-                          setNewMovement((prev) => ({ ...prev, category: value }))
-                        }
-                      >
-                        <SelectTrigger className="h-11">
-                          <SelectValue placeholder="Selecciona categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Descripción</Label>
-                    <Textarea
-                      value={newMovement.description}
-                      onChange={(e) =>
-                        setNewMovement((prev) => ({ ...prev, description: e.target.value }))
-                      }
-                      placeholder="Describe el movimiento"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Fecha</Label>
-                      <Input
-                        type="date"
-                        value={newMovement.date}
-                        onChange={(e) =>
-                          setNewMovement((prev) => ({ ...prev, date: e.target.value }))
-                        }
-                        className="h-11"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>{newMovement.type === "entrada" ? "Origen" : "Destinatario"}</Label>
-                      <Input
-                        value={newMovement.recipient}
-                        onChange={(e) =>
-                          setNewMovement((prev) => ({ ...prev, recipient: e.target.value }))
-                        }
-                        placeholder={newMovement.type === "entrada" ? "Ej. Donante" : "Ej. Librería"}
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Recibo</Label>
-                    <label className="flex items-center justify-center gap-2 border rounded-md h-11 cursor-pointer px-3">
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm truncate">
-                        {selectedReceiptName || "Subir recibo"}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          setSelectedReceiptFile(file);
-                          setSelectedReceiptName(file?.name || "");
-                        }}
-                      />
-                    </label>
-
-                    {selectedReceiptName ? (
-                      <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-                        <span className="text-xs truncate">{selectedReceiptName}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedReceiptFile(null);
-                            setSelectedReceiptName("");
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        resetForm();
-                      }}
-                      disabled={isSaving}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? "Guardando..." : editId ? "Actualizar" : "Guardar"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-        </div>
-      </header>
-      )}
-
-      {/* Mobile back + new button row */}
-      {!isDesktop && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
-          <button
-            type="button"
-            onClick={onBack}
-            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
-          >
-            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
-            Volver
-          </button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <button
                 type="button"
@@ -606,9 +437,177 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                 Nuevo
               </button>
             </DialogTrigger>
-          </Dialog>
-        </div>
-      )}
+          </div>
+        )}
+
+        <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{editId ? "Editar movimiento" : "Nuevo movimiento"}</DialogTitle>
+            <DialogDescription>
+              Registra ingresos, gastos y recibos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveMovement} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select
+                value={newMovement.type}
+                onValueChange={(value: MovementType) =>
+                  setNewMovement((prev) => ({
+                    ...prev,
+                    type: value,
+                    category: "",
+                  }))
+                }
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="entrada">Entrada</SelectItem>
+                  <SelectItem value="salida">Salida</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Monto</Label>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={newMovement.amount}
+                  onChange={(e) =>
+                    setNewMovement((prev) => ({ ...prev, amount: e.target.value }))
+                  }
+                  placeholder="0.00"
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Categoría</Label>
+                <Select
+                  value={newMovement.category}
+                  onValueChange={(value) =>
+                    setNewMovement((prev) => ({ ...prev, category: value }))
+                  }
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecciona categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Descripción</Label>
+              <Textarea
+                value={newMovement.description}
+                onChange={(e) =>
+                  setNewMovement((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Describe el movimiento"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input
+                  type="date"
+                  value={newMovement.date}
+                  onChange={(e) =>
+                    setNewMovement((prev) => ({ ...prev, date: e.target.value }))
+                  }
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{newMovement.type === "entrada" ? "Origen" : "Destinatario"}</Label>
+                <Input
+                  value={newMovement.recipient}
+                  onChange={(e) =>
+                    setNewMovement((prev) => ({ ...prev, recipient: e.target.value }))
+                  }
+                  placeholder={newMovement.type === "entrada" ? "Ej. Donante" : "Ej. Librería"}
+                  className="h-11"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Recibo</Label>
+              <label className="flex items-center justify-center gap-2 border rounded-md h-11 cursor-pointer px-3">
+                <Upload className="w-4 h-4" />
+                <span className="text-sm truncate">
+                  {selectedReceiptName || "Subir recibo"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedReceiptFile(file);
+                    setSelectedReceiptName(file?.name || "");
+                  }}
+                />
+              </label>
+
+              {selectedReceiptName ? (
+                <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+                  <span className="text-xs truncate">{selectedReceiptName}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedReceiptFile(null);
+                      setSelectedReceiptName("");
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  resetForm();
+                }}
+                disabled={isSaving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600"
+                disabled={isSaving}
+              >
+                {isSaving ? "Guardando..." : editId ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <main style={{ padding: isDesktop ? "1.25rem 1.5rem" : "0.75rem 0.75rem" }} className="space-y-4">
         <Card className="border">
@@ -699,41 +698,66 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
         </Card>
 
         <Card className="border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Buscar</Label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por descripción, categoría o destinatario"
-                  className="pl-9 h-10"
-                />
+          <div
+            className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-emerald-600" />
+              <div>
+                <CardTitle className="text-base">Filtros</CardTitle>
+                <CardDescription className="text-xs">
+                  {activeFilterCount > 0 ? `${activeFilterCount} filtros activos` : "Buscar por fecha, categoría o tipo"}
+                </CardDescription>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: isFiltersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                >
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </Button>
+            </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {isFiltersOpen && (
+            <CardContent className="space-y-4 border-t pt-4">
               <div className="space-y-2">
-                <Label className="text-xs">Tipo</Label>
-                <Select value={filterType} onValueChange={(value: "all" | MovementType) => setFilterType(value)}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="entrada">Entradas</SelectItem>
-                    <SelectItem value="salida">Salidas</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs">Buscar</Label>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por descripción, categoría o destinatario"
+                    className="pl-9 h-10"
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">Tipo</Label>
+                  <Select value={filterType} onValueChange={(value: "all" | MovementType) => setFilterType(value)}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="entrada">Entradas</SelectItem>
+                      <SelectItem value="salida">Salidas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
               <div className="space-y-2">
                 <Label className="text-xs">Categoría</Label>
@@ -782,6 +806,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
               </Button>
             </div>
           </CardContent>
+          )}
         </Card>
 
         <Card className="border">
