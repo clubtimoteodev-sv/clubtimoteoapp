@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
+import { ExportManager } from "./ExportManager";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -41,6 +42,30 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
   const [searchTerm, setSearchTerm] = useState("");
   const [explorers, setExplorers] = useState<Explorer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Outpost info from localStorage user object (saved on login)
+  const storedUser = (() => {
+  try { return JSON.parse(localStorage.getItem("user") || "{}"); }
+  catch { return {}; }
+})();
+
+const outpostInfo = {
+  // Busca si viene anidado (destacamento.name) o si viene plano (destacamentoNombre)
+  name: storedUser?.destacamento?.name || storedUser.destacamentoNombre || "Mi Destacamento",
+  city: storedUser?.destacamento?.city || "", 
+  leader: storedUser.name || "Líder",
+};
+
+  const explorerColumns = [
+    { key: "codigoInterno" as const, label: "Código" },
+    { key: "nombre" as const, label: "Nombres" },
+    { key: "apellidos" as const, label: "Apellidos" },
+    { key: "fechaNacimiento" as const, label: "Fecha Nac." },
+    { key: "telefono" as const, label: "Teléfono" },
+    { key: "nombreResponsable" as const, label: "Responsable" },
+    { key: "telefonoResponsable" as const, label: "Tel. Responsable" },
+    { key: "direccion" as const, label: "Dirección" },
+  ];
 
   useEffect(() => {
     async function loadExplorers() {
@@ -146,9 +171,18 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
               <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>{filteredExplorers.length} explorador{filteredExplorers.length !== 1 ? "es" : ""} encontrado{filteredExplorers.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
-          <Button size="sm" onClick={onAddNew}>
-            <UserPlus className="h-4 w-4 mr-1" /> Nuevo
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportManager
+              data={filteredExplorers as unknown as Record<string, unknown>[]}
+              availableColumns={explorerColumns}
+              filename="Lista_Exploradores"
+              reportTitle="Lista Oficial de Exploradores"
+              outpostInfo={outpostInfo}
+            />
+            <Button size="sm" onClick={onAddNew}>
+              <UserPlus className="h-4 w-4 mr-1" /> Nuevo
+            </Button>
+          </div>
         </div>
       </header>
       )}
@@ -167,14 +201,23 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
           <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
             {filteredExplorers.length} explorador{filteredExplorers.length !== 1 ? "es" : ""}
           </span>
-          <button
-            type="button"
-            onClick={onAddNew}
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "#111827", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
-          >
-            <UserPlus style={{ width: "0.9rem", height: "0.9rem" }} />
-            Nuevo
-          </button>
+          <div className="flex items-center gap-2">
+            <ExportManager
+              data={filteredExplorers as unknown as Record<string, unknown>[]}
+              availableColumns={explorerColumns}
+              filename="Lista_Exploradores"
+              reportTitle="Lista Oficial de Exploradores"
+              outpostInfo={outpostInfo}
+            />
+            <button
+              type="button"
+              onClick={onAddNew}
+              style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "#111827", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
+            >
+              <UserPlus style={{ width: "0.9rem", height: "0.9rem" }} />
+              Nuevo
+            </button>
+          </div>
         </div>
       )}
 

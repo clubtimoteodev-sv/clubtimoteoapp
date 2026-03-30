@@ -360,20 +360,20 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
 
             {/* Fields grid */}
             <div style={S.grid2}>
-              <Field label="Código de Explorador" required hint="Formato: 000-000">
-                <input
-                  style={S.input}
-                  value={formData.codigoExplorador}
-                  onChange={e => {
-                    const val = e.target.value.replace(/[^0-9-]/g, "")
-                      .replace(/-/g, "").substring(0, 6).replace(/^(\d{3})(\d)/, "$1-$2");
-                    handle("codigoExplorador", val);
-                  }}
-                  placeholder="000-000"
-                  maxLength={7}
-                  required
-                />
-              </Field>
+              <Field label="Código de Explorador" required hint="Formato: 000 (Ej: 001)">
+              <input
+                style={S.input}
+                value={formData.codigoExplorador}
+                onChange={e => {
+                  // Solo permite números y lo corta al llegar a 3 caracteres
+                  const val = e.target.value.replace(/[^0-9]/g, "").substring(0, 3);
+                  handle("codigoExplorador", val);
+                }}
+                placeholder="000"
+                maxLength={3}
+                required
+              />
+            </Field>
 
               <Field label="Fecha de Nacimiento" required>
                 <input style={S.input} type="date" value={formData.fechaNacimiento}

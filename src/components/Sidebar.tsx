@@ -9,6 +9,7 @@ import {
   Calendar,
   LogOut,
   X,
+  MapPin, // Añadido para el icono del destacamento
   type LucideIcon,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -62,6 +63,7 @@ interface SidebarProps {
   userName?: string;
   userEmail?: string;
   userRole?: string;
+  destacamentoName?: string; // NUEVO: Prop para el nombre de la iglesia
 }
 
 /** Returns user initials (up to 2 letters) from a full name */
@@ -79,6 +81,7 @@ function formatRole(role?: string): string {
     superadmin: "Super Admin",
     lider: "Líder",
     director: "Director",
+    territorial: "Líder Territorial"
   };
   return role ? (map[role] ?? role) : "Usuario";
 }
@@ -92,6 +95,7 @@ export function Sidebar({
   userName,
   userEmail,
   userRole,
+  destacamentoName, // NUEVO
 }: SidebarProps) {
   const isDesktop = useIsDesktop();
 
@@ -113,22 +117,32 @@ export function Sidebar({
 
   const sidebarContent = (
     <>
-      {/* Header */}
+      {/* Header Modificado para mostrar el Destacamento */}
       <div
         style={{
           padding: "1.5rem",
           borderBottom: "1px solid #e5e7eb",
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
-        <div>
-          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>
-            Club Exploradores
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>
+            Club Timoteo
           </h1>
-          <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.15rem" }}>
+          
+          {destacamentoName && (
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "6px" }}>
+              <MapPin style={{ width: "0.85rem", height: "0.85rem", color: "#0d9488" }} />
+              <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0d9488", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {destacamentoName}
+              </p>
+            </div>
+          )}
+          
+          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "2px" }}>
             Sistema de gestión
           </p>
         </div>
@@ -146,6 +160,7 @@ export function Sidebar({
               display: "flex",
               alignItems: "center",
               flexShrink: 0,
+              marginLeft: "10px"
             }}
           >
             <X style={{ width: "1.25rem", height: "1.25rem", color: "#374151" }} />
@@ -192,7 +207,7 @@ export function Sidebar({
               width: "2.25rem",
               height: "2.25rem",
               borderRadius: "9999px",
-              background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+              background: "linear-gradient(135deg, #0d9488, #0f766e)", // Lo cambié a tonos teal/verde para combinar
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -217,6 +232,19 @@ export function Sidebar({
             >
               {userName ?? "Usuario"}
             </p>
+            {userEmail && (
+              <p
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#4b5563",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {userEmail}
+              </p>
+            )}
             <p
               style={{
                 fontSize: "0.7rem",
@@ -224,9 +252,10 @@ export function Sidebar({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                textTransform: "capitalize"
               }}
             >
-              {userEmail ? userEmail : formatRole(userRole)}
+              {formatRole(userRole)}
             </p>
           </div>
         </div>

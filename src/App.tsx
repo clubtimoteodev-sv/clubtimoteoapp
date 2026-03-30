@@ -34,7 +34,7 @@ export default function App() {
   const [attendanceReportSource, setAttendanceReportSource] =
     useState<AttendanceReportSource>("menu");
 
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string; destacamentoNombre?: string } | null>(() => {
     try {
       const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
@@ -243,6 +243,7 @@ export default function App() {
         userName={currentUser?.name}
         userEmail={currentUser?.email}
         userRole={currentUser?.role}
+        destacamentoName={currentUser?.destacamentoNombre}
       />
 
       <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, overflow: "hidden" }}>

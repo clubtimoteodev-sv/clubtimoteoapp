@@ -64,7 +64,14 @@ router.post("/login", async (req, res) => {
 
   const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      destacamento: {
+        select: { id: true, nombre: true, ciudad: true, iglesia: true, encargado: true }
+      }
+    }
+  });
   if (!user) return res.status(401).json({ msg: "Credenciales inválidas" });
 
   const ok = await bcrypt.compare(password, user.password);
@@ -88,7 +95,11 @@ router.post("/login", async (req, res) => {
       name: user.name, 
       email: user.email, 
       role: user.role,
-      destacamentoId: user.destacamentoId 
+      destacamentoId: user.destacamentoId,
+      destacamentoNombre: user.destacamento?.nombre || null,
+      destacamentoCiudad: user.destacamento?.ciudad || null,
+      destacamentoIglesia: user.destacamento?.iglesia || null,
+      encargado: user.destacamento?.encargado || null,
     }
   });
 });
