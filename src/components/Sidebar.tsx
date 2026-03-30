@@ -123,21 +123,23 @@ export function Sidebar({
   return (
     <>
       {/* Desktop / tablet */}
-      <aside className="hidden md:flex w-64 shrink-0 min-h-screen bg-white border-r border-gray-200 flex-col">
+      <aside className="hidden md:flex w-64 shrink-0 h-full bg-white border-r border-gray-200 flex-col z-10 relative">
         {content}
       </aside>
 
-      {/* Mobile */}
+      {/* Mobile Drawer (Menu Desplegable Overlay) */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={onClose}
-          />
-
-          <aside className="absolute left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col shadow-xl">
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Drawer Panel */}
+          <aside className="w-64 h-full bg-white border-r border-gray-200 flex flex-col shadow-xl z-50 animate-in slide-in-from-left duration-200">
             {content}
           </aside>
+          
+          {/* Overlay mask */}
+          <div
+            className="flex-1 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
         </div>
       )}
     </>

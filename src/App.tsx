@@ -219,7 +219,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar
         activeSection={activeSection}
         onNavigate={handleSidebarNavigate}
@@ -228,13 +228,13 @@ export default function App() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
         <MobileHeader
-          onMenuClick={() => setIsSidebarOpen(true)}
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
           title={getSectionTitle()}
         />
 
-        <main className="flex-1 min-w-0 overflow-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 md:p-6 lg:p-8">
           {renderContent()}
         </main>
       </div>

@@ -89,7 +89,8 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
     const fd = new FormData();
     fd.append("file", file);
 
-    const res = await fetch("http://localhost:4000/api/upload", {
+    // CAMBIO 1: Apuntar a la URL de producción para la subida de archivos
+    const res = await fetch("https://x-production-e359.up.railway.app/api/upload", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -136,7 +137,8 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
       }
 
       const payload = {
-        codigoExplorador: formData.codigoExplorador,
+        // CAMBIO 2: Se envía 'codigoInterno' en lugar de 'codigoExplorador'
+        codigoInterno: formData.codigoExplorador,
         nombre: formData.nombre,
         apellidos: formData.apellidos,
         fechaNacimiento: formData.fechaNacimiento,
