@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -58,6 +59,7 @@ const initialForm = {
 };
 
 export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps) {
+  const isDesktop = useIsDesktop();
   const [explorers, setExplorers] = useState<Explorer[]>([]);
   const [groups, setGroups] = useState<ServiceGroupApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,6 +221,7 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50">
+      {isDesktop && (
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -360,6 +363,145 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
           </div>
         </div>
       </header>
+      )}
+
+      {!isDesktop && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "space-between", padding: "0.6rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+            <button
+              type="button"
+              onClick={onBack}
+              style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+            >
+              <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+              Volver
+            </button>
+            <span style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 500 }}>
+              Creación de Servicio
+            </span>
+            <Button
+              className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700 border-0 shadow-sm"
+              size="sm"
+              onClick={openCreateDialog}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Nuevo
+            </Button>
+          </div>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>{editId ? "Editar grupo" : "Nuevo grupo de servicio"}</DialogTitle>
+                <DialogDescription>
+                  Selecciona fecha, nombre del servicio y miembros.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleSave} className="space-y-4 pb-12 sm:pb-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Fecha</Label>
+                    <Input
+                      type="date"
+                      value={form.date}
+                      onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Día / Nombre</Label>
+                    <Input
+                      value={form.day}
+                      onChange={(e) => setForm((prev) => ({ ...prev, day: e.target.value }))}
+                      placeholder="Ej. Domingo, Sábado AM, Servicio especial"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Exploradores</Label>
+                    <Badge variant="outline" className="text-xs">
+                      Seleccionados: {selectedMemberIds.length}
+                    </Badge>
+                  </div>
+
+                  <div className="h-[40vh] sm:max-h-80 overflow-y-auto border rounded-xl bg-white">
+                    {explorers.length === 0 ? (
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground">
+                          No hay exploradores registrados.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {explorers.map((explorer) => {
+                          const checked = selectedMembers[explorer.id] || false;
+
+                          return (
+                            <label
+                              key={explorer.id}
+                              className="flex items-center justify-between gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                                  {getInitials(explorer.nombre, explorer.apellidos)}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {explorer.nombre} {explorer.apellidos}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    Explorador
+                                  </p>
+                                </div>
+                              </div>
+
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(value) =>
+                                  toggleMember(explorer.id, value === true)
+                                }
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 sm:pt-2 pb-6 sm:pb-0 relative z-20 bg-background">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 !text-slate-700"
+                    disabled={isSaving}
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    className="flex-1 !text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700 disabled:opacity-60 border-0 shadow-sm"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Guardando..." : editId ? "Actualizar" : "Guardar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
 
       <main className="px-4 py-5 pb-safe space-y-4">
         <div className="grid grid-cols-2 gap-3">

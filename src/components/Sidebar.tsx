@@ -11,6 +11,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 
 interface NavItemProps {
   icon: LucideIcon;
@@ -24,14 +25,30 @@ function NavItem({ icon: Icon, label, active, onClick }: NavItemProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-        active
-          ? "bg-blue-50 text-blue-600"
-          : "text-gray-700 hover:bg-gray-100"
-      }`}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        padding: "0.75rem 1rem",
+        borderRadius: "0.5rem",
+        transition: "all 0.15s",
+        background: active ? "#eff6ff" : "transparent",
+        color: active ? "#2563eb" : "#374151",
+        border: "none",
+        cursor: "pointer",
+        fontWeight: 500,
+        textAlign: "left",
+      }}
+      onMouseEnter={(e) => {
+        if (!active) (e.currentTarget as HTMLButtonElement).style.background = "#f3f4f6";
+      }}
+      onMouseLeave={(e) => {
+        if (!active) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+      }}
     >
-      <Icon className="w-5 h-5 shrink-0" />
-      <span className="font-medium">{label}</span>
+      <Icon style={{ width: "1.25rem", height: "1.25rem", flexShrink: 0 }} />
+      <span>{label}</span>
     </button>
   );
 }
@@ -42,6 +59,28 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string;
+}
+
+/** Returns user initials (up to 2 letters) from a full name */
+function getInitials(name?: string): string {
+  if (!name) return "?";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** Translate role slug to Spanish label */
+function formatRole(role?: string): string {
+  const map: Record<string, string> = {
+    admin: "Administrador",
+    superadmin: "Super Admin",
+    lider: "Líder",
+    director: "Director",
+  };
+  return role ? (map[role] ?? role) : "Usuario";
 }
 
 export function Sidebar({
@@ -50,7 +89,12 @@ export function Sidebar({
   onLogout,
   isOpen = false,
   onClose,
+  userName,
+  userEmail,
+  userRole,
 }: SidebarProps) {
+  const isDesktop = useIsDesktop();
+
   const navItems = [
     { id: "home", label: "Dashboard", icon: LayoutDashboard },
     { id: "calendar", label: "Calendario", icon: Calendar },
@@ -67,81 +111,215 @@ export function Sidebar({
     onClose?.();
   };
 
-  const content = (
+  const sidebarContent = (
     <>
-      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+      {/* Header */}
+      <div
+        style={{
+          padding: "1.5rem",
+          borderBottom: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
+      >
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Club Exploradores</h1>
-          <p className="text-sm text-gray-600 mt-1">Sistema de gestión</p>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>
+            Club Exploradores
+          </h1>
+          <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.15rem" }}>
+            Sistema de gestión
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-700" />
-        </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "0.4rem",
+              borderRadius: "0.5rem",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X style={{ width: "1.25rem", height: "1.25rem", color: "#374151" }} />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavItem
-            key={item.id}
-            icon={item.icon}
-            label={item.label}
-            active={activeSection === item.id}
-            onClick={() => handleNavigate(item.id)}
-          />
-        ))}
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "0.75rem", overflowY: "auto" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+          {navItems.map((item) => (
+            <NavItem
+              key={item.id}
+              icon={item.icon}
+              label={item.label}
+              active={activeSection === item.id}
+              onClick={() => handleNavigate(item.id)}
+            />
+          ))}
+        </div>
       </nav>
 
-      <div className="p-4 border-t border-gray-200 space-y-2">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-            JD
+      {/* User footer */}
+      <div
+        style={{
+          padding: "0.75rem",
+          borderTop: "1px solid #e5e7eb",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.75rem",
+            borderRadius: "0.5rem",
+            marginBottom: "0.25rem",
+          }}
+        >
+          {/* Avatar with initials */}
+          <div
+            style={{
+              width: "2.25rem",
+              height: "2.25rem",
+              borderRadius: "9999px",
+              background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              flexShrink: 0,
+            }}
+          >
+            {getInitials(userName)}
           </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">Juan Diaz</p>
-            <p className="text-xs text-gray-600">Administrador</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                color: "#111827",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {userName ?? "Usuario"}
+            </p>
+            <p
+              style={{
+                fontSize: "0.7rem",
+                color: "#6b7280",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {userEmail ? userEmail : formatRole(userRole)}
+            </p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-all"
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.6rem 0.75rem",
+            borderRadius: "0.5rem",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "#dc2626",
+            fontWeight: 500,
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+          }}
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Cerrar sesión</span>
+          <LogOut style={{ width: "1.125rem", height: "1.125rem", flexShrink: 0 }} />
+          <span>Cerrar sesión</span>
         </button>
       </div>
     </>
   );
 
+  // ── Desktop: fixed sidebar ──────────────────────────────────────────────────
+  if (isDesktop) {
+    return (
+      <aside
+        style={{
+          width: "16rem",
+          flexShrink: 0,
+          height: "100vh",
+          background: "white",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          left: 0,
+          zIndex: 10,
+          overflowY: "hidden",
+        }}
+      >
+        {sidebarContent}
+      </aside>
+    );
+  }
+
+  // ── Mobile: drawer overlay ──────────────────────────────────────────────────
+  if (!isOpen) return null;
+
   return (
-    <>
-      {/* Desktop / tablet */}
-      <aside className="hidden md:flex w-64 shrink-0 h-full bg-white border-r border-gray-200 flex-col z-10 relative">
-        {content}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+      }}
+    >
+      <aside
+        style={{
+          width: "16rem",
+          height: "100%",
+          background: "white",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "4px 0 24px rgba(0,0,0,0.18)",
+        }}
+      >
+        {sidebarContent}
       </aside>
 
-      {/* Mobile Drawer (Menu Desplegable Overlay) */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
-          {/* Drawer Panel */}
-          <aside className="w-64 h-full bg-white border-r border-gray-200 flex flex-col shadow-xl z-50 animate-in slide-in-from-left duration-200">
-            {content}
-          </aside>
-          
-          {/* Overlay mask */}
-          <div
-            className="flex-1 bg-black/40 backdrop-blur-sm transition-opacity"
-            onClick={onClose}
-          />
-        </div>
-      )}
-    </>
+      <div
+        style={{
+          flex: 1,
+          background: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(2px)",
+        }}
+        onClick={onClose}
+      />
+    </div>
   );
 }

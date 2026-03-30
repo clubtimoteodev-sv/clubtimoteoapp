@@ -28,6 +28,7 @@ import {
 import { Checkbox } from "./ui/checkbox";
 import { Textarea } from "./ui/textarea";
 import { toast } from "sonner@2.0.3";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 
 interface Explorer {
   id: string;
@@ -104,6 +105,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
   const [editMeetingType, setEditMeetingType] = useState("");
   const [editAttendance, setEditAttendance] = useState<Record<string, AttendanceRecordView>>({});
   const [savingEdit, setSavingEdit] = useState(false);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     loadMeetings();
@@ -318,34 +320,44 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white-50 to-white-50">
-        <header className="sticky top-0 z-10 border-b bg-white">
+        <header
+          style={{
+            position: isDesktop ? "sticky" : "static",
+            top: 0,
+            zIndex: 10,
+            borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
+            backgroundColor: "white",
+          }}
+        >
           <div className="px-4 py-4">
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedMeeting(null)}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-0 flex-1">
-                <p className="truncate bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-base text-transparent">
-                  Detalle de Asistencia
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
+                {isDesktop && (
+                  <p className="truncate bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-base text-transparent">
+                    Detalle de Asistencia
+                  </p>
+                )}
+                <p className={`truncate text-xs ${isDesktop ? 'text-muted-foreground' : 'text-slate-900 font-medium'}`}>
                   {formatDate(selectedMeeting.date)}
                 </p>
               </div>
 
               {!isEditing ? (
                 <Button variant="outline" size="sm" onClick={startEditing}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar
+                  <Pencil className={isDesktop ? "mr-2 h-4 w-4" : "h-4 w-4"} />
+                  {isDesktop && "Editar"}
                 </Button>
               ) : (
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={cancelEditing} disabled={savingEdit}>
-                    Cancelar
+                    {isDesktop ? "Cancelar" : <XCircle className="h-4 w-4" />}
                   </Button>
                   <Button size="sm" onClick={saveEdit} disabled={savingEdit}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {savingEdit ? "Guardando..." : "Guardar"}
+                    <Save className={isDesktop ? "mr-2 h-4 w-4" : "h-4 w-4"} />
+                    {isDesktop && (savingEdit ? "Guardando..." : "Guardar")}
                   </Button>
                 </div>
               )}
@@ -541,20 +553,30 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white-50 to-white-50">
-      <header className="sticky top-0 z-10 border-b bg-white">
+      <header
+        style={{
+          position: isDesktop ? "sticky" : "static",
+          top: 0,
+          zIndex: 10,
+          borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
+          backgroundColor: "white",
+        }}
+      >
         <div className="px-4 py-4">
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm" onClick={onBack}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <p className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-base text-transparent">
-                Reporte de Asistencia
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Historial de reuniones
-              </p>
-            </div>
+            {isDesktop && (
+              <div>
+                <p className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-base text-transparent">
+                  Reporte de Asistencia
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Historial de reuniones
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </header>

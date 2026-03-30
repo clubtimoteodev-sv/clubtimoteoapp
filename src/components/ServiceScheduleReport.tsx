@@ -12,6 +12,7 @@ import {
   Users,
   Trash2,
 } from "lucide-react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { toast } from "sonner@2.0.3";
 
 interface ServiceScheduleReportProps {
@@ -45,6 +46,7 @@ export function ServiceScheduleReport({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     if (initialGroupId) {
@@ -107,7 +109,15 @@ export function ServiceScheduleReport({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      <header className="bg-white border-b sticky top-0">
+      <header
+        style={{
+          position: isDesktop ? "sticky" : "static",
+          top: 0,
+          zIndex: 10,
+          borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
+          backgroundColor: "white",
+        }}
+      >
         <div className="px-4 py-4 flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={onBack} type="button">
             <ArrowLeft className="w-4 h-4" />

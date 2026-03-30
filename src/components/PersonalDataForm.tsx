@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -13,6 +14,7 @@ interface PersonalDataFormProps {
 }
 
 export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
+  const isDesktop = useIsDesktop();
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [recetaPreview, setRecetaPreview] = useState<string | null>(null);
   const [permisoPreview, setPermisoPreview] = useState<string | null>(null);
@@ -222,6 +224,8 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      {/* Desktop inner header */}
+      {isDesktop && (
       <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div className="flex items-center space-x-2">
@@ -241,6 +245,24 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
           </div>
         </div>
       </header>
+      )}
+
+      {/* Mobile compact bar */}
+      {!isDesktop && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+          >
+            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+            Cancelar
+          </button>
+          <span style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 500 }}>
+            Nuevo explorador
+          </span>
+        </div>
+      )}
 
       <main className="px-4 py-5 pb-safe">
         <form onSubmit={handleSubmit} className="space-y-6">

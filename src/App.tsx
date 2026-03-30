@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Sidebar } from "./components/Sidebar";
 import { MobileHeader } from "./components/MobileHeader";
@@ -33,6 +33,20 @@ export default function App() {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [attendanceReportSource, setAttendanceReportSource] =
     useState<AttendanceReportSource>("menu");
+
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setCurrentUser(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [isAuthenticated]);
 
   const goHome = () => setActiveSection("home");
 
@@ -219,22 +233,25 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div style={{ display: "flex", height: "100vh", background: "#f9fafb", overflow: "hidden" }}>
       <Sidebar
         activeSection={activeSection}
         onNavigate={handleSidebarNavigate}
         onLogout={handleLogout}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        userName={currentUser?.name}
+        userEmail={currentUser?.email}
+        userRole={currentUser?.role}
       />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <MobileHeader
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
           title={getSectionTitle()}
         />
 
-        <main className="flex-1 min-w-0 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
           {renderContent()}
         </main>
       </div>

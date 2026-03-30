@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -74,6 +75,7 @@ const initialForm = {
 };
 
 export function FinanceManager({ onBack }: FinanceManagerProps) {
+  const isDesktop = useIsDesktop();
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -379,21 +381,23 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
     (search.trim() ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center space-x-2 flex-1 min-w-0">
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f8fafc 0%, #ecfdf5 50%, #f0fdfa 100%)" }}>
+      {/* Inner header — only for desktop (mobile uses MobileHeader from App) */}
+      {isDesktop && (
+      <header style={{ background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ padding: "1rem 1.25rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1, minWidth: 0 }}>
+              <button
+                type="button"
+                onClick={onBack}
+                style={{ padding: "0.4rem", borderRadius: "0.5rem", border: "none", background: "transparent", cursor: "pointer", display: "flex" }}
+              >
+                <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+              </button>
               <div>
-                <p className="text-base bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  Finanzas
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Gestión de ingresos y gastos
-                </p>
+                <p style={{ fontSize: "0.9rem", fontWeight: 600, background: "linear-gradient(to right, #059669, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Finanzas</p>
+                <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>Gestión de ingresos y gastos</p>
               </div>
             </div>
 
@@ -579,8 +583,35 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="px-4 py-5 pb-safe space-y-4">
+      {/* Mobile back + new button row */}
+      {!isDesktop && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+          >
+            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+            Volver
+          </button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                onClick={openCreateDialog}
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "linear-gradient(to right, #059669, #0d9488)", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
+              >
+                <Plus style={{ width: "0.9rem", height: "0.9rem" }} />
+                Nuevo
+              </button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
+      )}
+
+      <main style={{ padding: isDesktop ? "1.25rem 1.5rem" : "0.75rem 0.75rem" }} className="space-y-4">
         <Card className="border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Resumen general</CardTitle>
@@ -589,7 +620,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "1fr", gap: "0.75rem" }}>
               <div className="rounded-xl border bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -643,7 +674,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "1fr", gap: "0.75rem" }}>
               <div className="rounded-xl border border-green-100 bg-green-50 p-4">
                 <p className="text-xs text-muted-foreground">Entradas mes</p>
                 <p className="text-lg font-semibold text-green-600">

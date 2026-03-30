@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -39,6 +40,7 @@ export function ServiceGroups({
   onTakeAttendance,
   onViewReport,
 }: ServiceGroupsProps) {
+  const isDesktop = useIsDesktop();
   const [groups, setGroups] = useState<ServiceGroupApi[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +71,7 @@ export function ServiceGroups({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50">
+      {isDesktop && (
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center gap-2">
           <Button
@@ -90,6 +93,23 @@ export function ServiceGroups({
           </div>
         </div>
       </header>
+      )}
+
+      {!isDesktop && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+          >
+            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+            Volver
+          </button>
+          <span style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 500 }}>
+            {groups.length} grupos
+          </span>
+        </div>
+      )}
 
       <main className="px-4 py-6 space-y-4">
         <div className="flex items-start justify-between gap-3">

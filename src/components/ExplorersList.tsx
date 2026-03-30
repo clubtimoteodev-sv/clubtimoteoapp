@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -36,6 +37,7 @@ interface ExplorersListProps {
 }
 
 export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersListProps) {
+  const isDesktop = useIsDesktop();
   const [searchTerm, setSearchTerm] = useState("");
   const [explorers, setExplorers] = useState<Explorer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +132,8 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
   return (
     <div className="min-h-screen bg-gray-50">
       
+      {/* Desktop inner header */}
+      {isDesktop && (
       <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -154,6 +158,32 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
           </div>
         </div>
       </header>
+      )}
+
+      {/* Mobile compact bar */}
+      {!isDesktop && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+          >
+            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+            Volver
+          </button>
+          <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+            {filteredExplorers.length} explorador{filteredExplorers.length !== 1 ? "es" : ""}
+          </span>
+          <button
+            type="button"
+            onClick={onAddNew}
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "#111827", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
+          >
+            <UserPlus style={{ width: "0.9rem", height: "0.9rem" }} />
+            Nuevo
+          </button>
+        </div>
+      )}
 
       <main className="px-4 py-5 pb-safe">
         <div className="mb-5">

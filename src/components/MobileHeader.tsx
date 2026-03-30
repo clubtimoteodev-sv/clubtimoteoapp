@@ -1,4 +1,5 @@
 import { Menu } from "lucide-react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 
 interface MobileHeaderProps {
   onMenuClick: () => void;
@@ -6,17 +7,42 @@ interface MobileHeaderProps {
 }
 
 export function MobileHeader({ onMenuClick, title }: MobileHeaderProps) {
+  const isDesktop = useIsDesktop();
+
+  // On desktop, don't render the mobile top bar at all
+  if (isDesktop) return null;
+
   return (
-    <header className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-4 flex items-center gap-4">
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
+        background: "white",
+        borderBottom: "1px solid #e5e7eb",
+        padding: "1rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+      }}
+    >
       <button
         type="button"
         onClick={onMenuClick}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        style={{
+          padding: "0.5rem",
+          borderRadius: "0.5rem",
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+        }}
       >
-        <Menu className="w-6 h-6 text-gray-700" />
+        <Menu style={{ width: "1.5rem", height: "1.5rem", color: "#374151" }} />
       </button>
 
-      <h1 className="text-lg font-semibold text-gray-900 truncate">
+      <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#111827" }}>
         {title}
       </h1>
     </header>

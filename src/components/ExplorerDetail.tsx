@@ -29,7 +29,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
-
+import { useIsDesktop } from "../hooks/useIsDesktop";
 interface Explorer {
   id: string;
   codigoInterno?: string | null;
@@ -102,6 +102,7 @@ export function ExplorerDetail({
 }: ExplorerDetailProps) {
   const [explorer, setExplorer] = useState<Explorer | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const isDesktop = useIsDesktop();
   const [loading, setLoading] = useState(true);
   const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -333,31 +334,50 @@ export function ExplorerDetail({
     "flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 transition-colors hover:bg-gray-50";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto max-w-5xl px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f9fafb", // bg-gray-50
+      }}
+    >
+      <header
+        style={{
+          position: isDesktop ? "sticky" : "static",
+          top: 0,
+          zIndex: 10,
+          backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.95)" : "transparent",
+          backdropFilter: isDesktop ? "blur(8px)" : "none",
+          borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
+          padding: isDesktop ? "0.75rem 1rem" : "0.5rem 1rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+        }}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-gray-900">
-                  Detalles del Explorador
-                </p>
-                <p className="truncate text-xs text-gray-500">
-                  Información personal y asistencia
-                </p>
-              </div>
+          {isDesktop && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900">
+                Detalles del Explorador
+              </p>
+              <p className="truncate text-xs text-gray-500">
+                Información personal y asistencia
+              </p>
             </div>
+          )}
+        </div>
 
-            {isEditing ? (
+        {isEditing ? (
   <div className="flex items-center gap-2">
     <Button
       type="button"
@@ -367,7 +387,7 @@ export function ExplorerDetail({
       className="border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
     >
       <X className="mr-2 h-4 w-4" />
-      Cancelar
+      <span className={isDesktop ? "" : "hidden sm:inline"}>Cancelar</span>
     </Button>
 
     <Button
@@ -377,7 +397,7 @@ export function ExplorerDetail({
       className="!border !border-green-600 !bg-green-600 !text-white shadow-sm hover:!bg-green-700"
     >
       <Save className="mr-2 h-4 w-4" />
-      Guardar
+      <span className={isDesktop ? "" : "hidden sm:inline"}>Guardar</span>
     </Button>
   </div>
 ) : (
@@ -389,16 +409,21 @@ export function ExplorerDetail({
     className="border-gray-300 bg-white text-gray-800 hover:bg-gray-100"
   >
     <Edit className="mr-2 h-4 w-4" />
-    Editar
+    <span className={isDesktop ? "" : "hidden sm:inline"}>Editar</span>
   </Button>
 )}
 
 
-          </div>
-        </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+      <main
+        style={{
+          maxWidth: "64rem",
+          margin: "0 auto",
+          padding: isDesktop ? "1.5rem" : "0.5rem",
+        }}
+        className="space-y-6"
+      >
         <Card className="border border-gray-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">

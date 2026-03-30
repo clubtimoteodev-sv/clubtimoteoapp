@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useIsDesktop } from "../hooks/useIsDesktop";
 import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -46,6 +47,7 @@ export function ServiceScheduleAttendance({
   onBack,
   initialGroupId,
 }: ServiceScheduleAttendanceProps) {
+  const isDesktop = useIsDesktop();
   const [serviceGroups, setServiceGroups] = useState<ServiceGroupApi[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(initialGroupId || "");
   const [serviceNotes, setServiceNotes] = useState("");
@@ -219,6 +221,7 @@ export function ServiceScheduleAttendance({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      {isDesktop && (
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-4">
           <div className="flex items-center gap-2">
@@ -236,6 +239,23 @@ export function ServiceScheduleAttendance({
           </div>
         </div>
       </header>
+      )}
+
+      {!isDesktop && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 1rem", gap: "0.5rem", borderBottom: "1px solid #e5e7eb", background: "white" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ padding: "0.4rem 0.6rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "#374151" }}
+          >
+            <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
+            Cancelar
+          </button>
+          <span style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 500 }}>
+            Asistencia servicio
+          </span>
+        </div>
+      )}
 
       <main className="px-4 py-6 pb-safe space-y-4">
         <div>
