@@ -251,7 +251,7 @@ export default function App() {
           title={getSectionTitle()}
         />
 
-        <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
+        <main style={{ flex: 1, minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
           {renderContent()}
         </main>
       </div>
