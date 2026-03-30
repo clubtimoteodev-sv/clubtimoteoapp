@@ -45,9 +45,10 @@ export function Login({ onLogin }: LoginProps) {
 
       onLogin(data.token);
 
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Login Error:", err);
       localStorage.removeItem("token");
-      alert("Credenciales incorrectas");
+      alert(err.message === "Credenciales inválidas" ? err.message : `Error de conexión: ${err.message || 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
