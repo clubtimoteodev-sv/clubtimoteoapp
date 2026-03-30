@@ -112,23 +112,22 @@ export function ServiceScheduleReport({
       <header
         style={{
           position: isDesktop ? "sticky" : "static",
-          top: 0,
-          zIndex: 10,
-          borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
+          top: 0, zIndex: 10,
+          borderBottom: isDesktop ? "1px solid #e2e8f0" : "none",
           backgroundColor: "white",
         }}
       >
-        <div className="px-4 py-4 flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={onBack} type="button">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-
-          <div>
-            <h1 className="text-lg text-purple-600">Historial de Servicio</h1>
-            <p className="text-xs text-muted-foreground">
-              Registros de asistencia
-            </p>
-          </div>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}>
+            <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+            Volver
+          </button>
+          {isDesktop && (
+            <div>
+              <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b" }}>Historial de Servicio</p>
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>Registros de asistencia por grupo</p>
+            </div>
+          )}
         </div>
       </header>
 

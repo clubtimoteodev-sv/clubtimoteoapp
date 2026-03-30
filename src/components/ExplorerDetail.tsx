@@ -343,36 +343,28 @@ export function ExplorerDetail({
       <header
         style={{
           position: isDesktop ? "sticky" : "static",
-          top: 0,
-          zIndex: 10,
-          backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.95)" : "transparent",
-          backdropFilter: isDesktop ? "blur(8px)" : "none",
-          borderBottom: isDesktop ? "1px solid #e5e7eb" : "none",
-          padding: isDesktop ? "0.75rem 1rem" : "0.5rem 1rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "0.75rem",
+          top: 0, zIndex: 10,
+          backgroundColor: "white",
+          borderBottom: isDesktop ? "1px solid #e2e8f0" : "none",
+          padding: isDesktop ? "0.75rem 1.5rem" : "0.5rem 1rem",
+          display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: "0.75rem",
         }}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
+          <button
+            type="button"
             onClick={onBack}
-            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500, flexShrink: 0 }}
           >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+            <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+            Volver
+          </button>
 
           {isDesktop && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">
-                Detalles del Explorador
-              </p>
-              <p className="truncate text-xs text-gray-500">
-                Información personal y asistencia
-              </p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Detalles del Explorador</p>
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>Información personal y asistencia</p>
             </div>
           )}
         </div>

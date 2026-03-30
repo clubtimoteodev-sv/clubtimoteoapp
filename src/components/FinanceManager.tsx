@@ -384,22 +384,22 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f8fafc 0%, #ecfdf5 50%, #f0fdfa 100%)" }}>
       {/* Inner header — only for desktop (mobile uses MobileHeader from App) */}
       {isDesktop && (
-      <header style={{ background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ padding: "1rem 1.25rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1, minWidth: 0 }}>
-              <button
-                type="button"
-                onClick={onBack}
-                style={{ padding: "0.4rem", borderRadius: "0.5rem", border: "none", background: "transparent", cursor: "pointer", display: "flex" }}
-              >
-                <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
-              </button>
-              <div>
-                <p style={{ fontSize: "0.9rem", fontWeight: 600, background: "linear-gradient(to right, #059669, #0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Finanzas</p>
-                <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>Gestión de ingresos y gastos</p>
-              </div>
+      <header style={{ background: "white", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <button
+              type="button"
+              onClick={onBack}
+              style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}
+            >
+              <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+              Volver
+            </button>
+            <div>
+              <p style={{ fontSize: "1rem", fontWeight: 700, color: "#1e293b" }}>Finanzas</p>
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Gestión de ingresos y gastos</p>
             </div>
+          </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -580,7 +580,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
         </div>
       </header>
       )}

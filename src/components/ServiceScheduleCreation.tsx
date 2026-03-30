@@ -222,33 +222,25 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50">
       {isDesktop && (
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center space-x-2 min-w-0">
-              <Button variant="ghost" size="sm" onClick={onBack} className="!text-slate-700">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <div>
-                <p className="text-base bg-gradient-to-r from-cyan-600 to-sky-600 bg-clip-text text">
-                  Creación de Servicio
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Crea grupos y asigna exploradores
-                </p>
-              </div>
+      <header style={{ position: "sticky", top: 0, zIndex: 10, background: "white", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}>
+              <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+              Volver
+            </button>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b" }}>Creación de Servicio</p>
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>Crea grupos y asigna exploradores</p>
             </div>
-
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700 border-0 shadow-sm"
-                  onClick={openCreateDialog}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo
-                </Button>
-              </DialogTrigger>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo
+              </Button>
+            </DialogTrigger>
 
               <DialogContent className="max-w-xl">
                 <DialogHeader>
@@ -360,7 +352,6 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
         </div>
       </header>
       )}

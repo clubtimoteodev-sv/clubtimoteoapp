@@ -229,25 +229,15 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
 
       {isDesktop && (
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="px-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-
-            <div>
-              <p className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-base text-transparent">
-                Toma de Asistencia
-              </p>
-
-              <p className="text-xs text-muted-foreground">
-                {initialMeetingId
-                  ? "Editando reunión existente"
-                  : "Registra la asistencia"}
-              </p>
-            </div>
-
+      <header style={{ position: "sticky", top: 0, zIndex: 10, background: "white", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}>
+            <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+            Volver
+          </button>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b" }}>Toma de Asistencia</p>
+            <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>{initialMeetingId ? "Editando reunión existente" : "Registra la asistencia"}</p>
           </div>
         </div>
       </header>

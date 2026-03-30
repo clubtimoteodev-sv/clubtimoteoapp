@@ -134,28 +134,21 @@ export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersLis
       
       {/* Desktop inner header */}
       {isDesktop && (
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center space-x-2">
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-gray-900">
-                  Exploradores
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {filteredExplorers.length} encontrado{filteredExplorers.length !== 1 ? "s" : ""}
-                </p>
-              </div>
+      <header style={{ position: "sticky", top: 0, zIndex: 10, background: "white", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}>
+              <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+              Volver
+            </button>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b" }}>Exploradores</p>
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>{filteredExplorers.length} explorador{filteredExplorers.length !== 1 ? "es" : ""} encontrado{filteredExplorers.length !== 1 ? "s" : ""}</p>
             </div>
-
-            <Button size="sm" onClick={onAddNew} className="flex-shrink-0">
-              <UserPlus className="h-4 w-4" />
-            </Button>
           </div>
+          <Button size="sm" onClick={onAddNew}>
+            <UserPlus className="h-4 w-4 mr-1" /> Nuevo
+          </Button>
         </div>
       </header>
       )}

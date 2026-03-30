@@ -222,20 +222,15 @@ export function ServiceScheduleAttendance({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
       {isDesktop && (
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onBack} className="!text-slate-700">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <p className="text-base font-medium text-slate-900">
-                Asistencia de Servicio
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Marca presentes y ausentes
-              </p>
-            </div>
+      <header style={{ position: "sticky", top: 0, zIndex: 10, background: "white", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.85rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", fontSize: "0.875rem", color: "#475569", fontWeight: 500 }}>
+            <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+            Volver
+          </button>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b" }}>Asistencia de Servicio</p>
+            <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1px" }}>Marca presentes y ausentes</p>
           </div>
         </div>
       </header>
