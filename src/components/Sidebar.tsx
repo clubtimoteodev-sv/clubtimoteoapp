@@ -130,20 +130,11 @@ export function Sidebar({
       >
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>
-            Club Timoteo
+            Club Timoteo APP
           </h1>
           
-          {destacamentoName && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "6px" }}>
-              <MapPin style={{ width: "0.85rem", height: "0.85rem", color: "#0d9488" }} />
-              <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0d9488", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {destacamentoName}
-              </p>
-            </div>
-          )}
-          
-          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "2px" }}>
-            Sistema de gestión
+          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "4px" }}>
+            Sistema de gestión de destacamentos
           </p>
         </div>
 
@@ -191,6 +182,15 @@ export function Sidebar({
           flexShrink: 0,
         }}
       >
+        {destacamentoName && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.5rem", padding: "0 0.25rem" }}>
+            <MapPin style={{ width: "0.85rem", height: "0.85rem", color: "#0d9488" }} />
+            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0d9488", textTransform: "uppercase", letterSpacing: "0.025em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {destacamentoName}
+            </p>
+          </div>
+        )}
+
         <div
           style={{
             display: "flex",
