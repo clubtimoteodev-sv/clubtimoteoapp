@@ -734,7 +734,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
               <div className="space-y-2">
                 <Label className="text-xs">Buscar</Label>
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -923,21 +922,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
           </CardContent>
         </Card>
 
-        {expensesByCategory.length > 0 && (
-          <Card className="border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Gastos por categoría</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {expensesByCategory.map((item) => (
-                <div key={item.category} className="flex items-center justify-between text-sm">
-                  <span>{item.category}</span>
-                  <span className="font-medium">{formatCurrency(item.amount)}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        
       </main>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

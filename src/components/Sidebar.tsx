@@ -128,15 +128,64 @@ export function Sidebar({
           flexShrink: 0,
         }}
       >
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>
-            Club Timoteo APP
-          </h1>
-          
-          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "4px" }}>
-            Sistema de gestión de destacamentos
-          </p>
-        </div>
+        <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
+  
+  {/* Sección de Título y Subtítulo */}
+  <div>
+    <h1 style={{ 
+      fontSize: "1.25rem", 
+      fontWeight: 800, 
+      color: "#111827", 
+      lineHeight: 1.1,
+      letterSpacing: "-0.025em" 
+    }}>
+      Club Timoteo
+    </h1>
+    <p style={{ 
+      fontSize: "0.75rem", 
+      color: "#6b7280", 
+      marginTop: "2px",
+      fontWeight: 500
+    }}>
+      Sistema de Gestión
+    </p>
+  </div>
+
+  {/* Etiqueta (Badge) de Ubicación */}
+  {destacamentoName && (
+    <div style={{ 
+      display: "inline-flex", 
+      alignItems: "center", 
+      gap: "6px", 
+      backgroundColor: "#f0fdfa", /* Fondo aqua/teal muy clarito */
+      border: "1px solid #ccfbf1", /* Borde sutil para darle volumen */
+      padding: "4px 10px", 
+      borderRadius: "9999px", /* Bordes totalmente redondeados estilo píldora */
+      width: "fit-content",
+      maxWidth: "100%"
+    }}>
+      <MapPin style={{ 
+        flexShrink: 0, /* Evita que el ícono se aplaste si el texto es muy largo */
+        width: "0.85rem", 
+        height: "0.85rem", 
+        color: "#0d9488" 
+      }} />
+      <span style={{ 
+        fontSize: "0.7rem", 
+        fontWeight: 700, 
+        color: "#0d9488", 
+        textTransform: "uppercase", 
+        letterSpacing: "0.05em", 
+        whiteSpace: "nowrap", 
+        overflow: "hidden", 
+        textOverflow: "ellipsis" 
+      }}>
+        {destacamentoName}
+      </span>
+    </div>
+  )}
+
+</div>
 
         {!isDesktop && (
           <button
@@ -182,14 +231,7 @@ export function Sidebar({
           flexShrink: 0,
         }}
       >
-        {destacamentoName && (
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.5rem", padding: "0 0.25rem" }}>
-            <MapPin style={{ width: "0.85rem", height: "0.85rem", color: "#0d9488" }} />
-            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0d9488", textTransform: "uppercase", letterSpacing: "0.025em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {destacamentoName}
-            </p>
-          </div>
-        )}
+      
 
         <div
           style={{

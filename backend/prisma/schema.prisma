@@ -7,40 +7,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Destacamento {
-  id                String   @id @default(cuid())
-  codigo            String   @unique
-  nombre            String
-  iglesia           String?
-  direccion         String?
-  ciudad            String?
-  telefono          String?
-  encargado         String?
-  createdAt         DateTime @default(now())
+// ------------------------------------------------------
+// NUEVO: Modelo de Territorio (Ej. Occidente, Centro, Oriente)
+// ------------------------------------------------------
+model Territorio {
+  id            String         @id @default(cuid())
+  nombre        String         @unique
+  descripcion   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  users             User[]
-  explorers         Explorer[]
-  meetings          Meeting[]
-  financeMovements  FinanceMovement[]
-  serviceGroups     ServiceGroup[]
+  destacamentos Destacamento[] // Las iglesias que pertenecen a esta zona
+  lideres       User[]         // Los líderes territoriales asignados aquí
+}
+
+model Destacamento {
+  id               String            @id @default(cuid())
+  codigo           String            @unique
+  nombre           String
+  iglesia          String?
+  direccion        String?
+  ciudad           String?
+  telefono         String?
+  encargado        String?
+  createdAt        DateTime          @default(now())
+
+  // NUEVO: Conexión con el Territorio
+  territorioId     String?
+  territorio       Territorio?       @relation(fields: [territorioId], references: [id])
+
+  users            User[]
+  explorers        Explorer[]
+  meetings         Meeting[]
+  financeMovements FinanceMovement[]
+  serviceGroups    ServiceGroup[]
+
+  @@index([territorioId])
 }
 
 model User {
-  id               String        @id @default(cuid())
-  name             String
-  email            String        @unique
-  password         String
-  role             String        @default("admin")
-  destacamentoId   String
-  createdAt        DateTime      @default(now())
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  password       String
+  role           String        @default("admin")
+  createdAt      DateTime      @default(now())
 
-  destacamento     Destacamento  @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  // MODIFICADO: Ahora es opcional (String?) porque un Líder Territorial 
+  // podría no pertenecer a un destacamento específico, sino a un territorio entero.
+  destacamentoId String?
+  destacamento   Destacamento? @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+
+  // NUEVO: Conexión para el Líder Territorial
+  territorioId   String?
+  territorio     Territorio?   @relation(fields: [territorioId], references: [id])
 
   @@index([destacamentoId])
+  @@index([territorioId])
 }
 
 model Explorer {
-  id                       String   @id @default(cuid())
+  id                       String                    @id @default(cuid())
   codigoInterno            String
   nombre                   String
   apellidos                String
@@ -66,10 +93,10 @@ model Explorer {
   permisoUrl               String?
 
   destacamentoId           String
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
 
-  destacamento             Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  destacamento             Destacamento              @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
   attendanceRecords        AttendanceRecord[]
   serviceMembers           ServiceGroupMember[]
   serviceAttendanceMembers ServiceAttendanceMember[]
@@ -79,27 +106,27 @@ model Explorer {
 }
 
 model Meeting {
-  id               String        @id @default(cuid())
-  date             DateTime
-  type             String
-  destacamentoId   String
-  createdAt        DateTime      @default(now())
+  id             String             @id @default(cuid())
+  date           DateTime
+  type           String
+  destacamentoId String
+  createdAt      DateTime           @default(now())
 
-  destacamento     Destacamento  @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
-  records          AttendanceRecord[]
+  destacamento   Destacamento       @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  records        AttendanceRecord[]
 
   @@index([destacamentoId])
 }
 
 model AttendanceRecord {
-  id             String   @id @default(cuid())
-  meetingId      String
-  explorerId     String
-  attended       Boolean
-  justification  String?
+  id            String   @id @default(cuid())
+  meetingId     String
+  explorerId    String
+  attended      Boolean
+  justification String?
 
-  meeting        Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  explorer       Explorer @relation(fields: [explorerId], references: [id], onDelete: Cascade)
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  explorer      Explorer @relation(fields: [explorerId], references: [id], onDelete: Cascade)
 
   @@unique([meetingId, explorerId])
   @@index([explorerId])
@@ -107,38 +134,38 @@ model AttendanceRecord {
 }
 
 model FinanceMovement {
-  id               String   @id @default(cuid())
-  type             String
-  amount           Decimal  @db.Decimal(12,2)
-  category         String
-  description      String
-  date             DateTime
-  recipient        String
-  receiptUrl       String?
-  destacamentoId   String
-  createdAt        DateTime @default(now())
+  id             String       @id @default(cuid())
+  type           String
+  amount         Decimal      @db.Decimal(12,2)
+  category       String
+  description    String
+  date           DateTime
+  recipient      String
+  receiptUrl     String?
+  destacamentoId String
+  createdAt      DateTime     @default(now())
 
-  destacamento     Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  destacamento   Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
 
   @@index([destacamentoId])
 }
 
 model ServiceGroup {
-  id               String   @id @default(cuid())
-  date             DateTime
-  day              String
-  destacamentoId   String
-  createdAt        DateTime @default(now())
+  id             String              @id @default(cuid())
+  date           DateTime
+  day            String
+  destacamentoId String
+  createdAt      DateTime            @default(now())
 
-  destacamento     Destacamento @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
-  members          ServiceGroupMember[]
-  attendances      ServiceAttendance[]
+  destacamento   Destacamento        @relation(fields: [destacamentoId], references: [id], onDelete: Cascade)
+  members        ServiceGroupMember[]
+  attendances    ServiceAttendance[]
 
   @@index([destacamentoId])
 }
 
 model ServiceGroupMember {
-  id         String @id @default(cuid())
+  id         String       @id @default(cuid())
   groupId    String
   explorerId String
 
@@ -150,26 +177,26 @@ model ServiceGroupMember {
 }
 
 model ServiceAttendance {
-  id           String   @id @default(cuid())
-  groupId       String
-  takenAt       DateTime @default(now())
-  serviceNotes  String?
+  id           String                    @id @default(cuid())
+  groupId      String
+  takenAt      DateTime                  @default(now())
+  serviceNotes String?
 
-  group         ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  members       ServiceAttendanceMember[]
+  group        ServiceGroup              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  members      ServiceAttendanceMember[]
 
   @@index([groupId])
 }
 
 model ServiceAttendanceMember {
-  id            String  @id @default(cuid())
-  attendanceId  String
-  explorerId    String
-  present       Boolean
-  note          String?
+  id           String            @id @default(cuid())
+  attendanceId String
+  explorerId   String
+  present      Boolean
+  note         String?
 
-  attendance    ServiceAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  explorer      Explorer          @relation(fields: [explorerId], references: [id], onDelete: Cascade)
+  attendance   ServiceAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  explorer     Explorer          @relation(fields: [explorerId], references: [id], onDelete: Cascade)
 
   @@unique([attendanceId, explorerId])
   @@index([explorerId])
