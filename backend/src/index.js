@@ -38,7 +38,7 @@ app.use(cors({
 
 app.use(express.json({ limit: "2mb" }));
 
-// static uploads
+// static uploads fotos
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
