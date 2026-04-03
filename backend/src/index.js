@@ -13,6 +13,7 @@ import financeRoutes from "./routes/finance.routes.js";
 import serviceGroupsRoutes from "./routes/service-groups.routes.js";
 import serviceAttendanceRoutes from "./routes/service-attendance.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import territorioRoutes from "./routes/territorio.routes.js";
 
 dotenv.config();
 
@@ -22,8 +23,9 @@ app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
       "http://localhost:5173",
-      "http://localhost:3000",
-      "https://clubtimoteo.vercel.app"
+      "http://localhost:3000", "
+      "https://clubtimoteo.vercel.app",
+      "https://www.clubtimoteo.com"
     ];
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       callback(null, true);
@@ -60,6 +62,7 @@ app.use("/api/service-groups", serviceGroupsRoutes);
 app.use("/api/service-attendance", serviceAttendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/calendar", calendarRoutes);
+app.use("/api/territorio", territorioRoutes);
 
 // PORT for Railway
 const PORT = process.env.PORT || 8080;

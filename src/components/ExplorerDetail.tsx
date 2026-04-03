@@ -28,7 +28,7 @@ import {
   Hash,
   GraduationCap,
 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 interface Explorer {
   id: string;
@@ -107,6 +107,12 @@ export function ExplorerDetail({
   const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Explorer | null>(null);
+
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}"); }
+    catch { return {}; }
+  })();
+  const isReadOnly = storedUser.role === "lider territorial";
 
   useEffect(() => {
     loadExplorer();
@@ -392,7 +398,7 @@ export function ExplorerDetail({
       <span className={isDesktop ? "" : "hidden sm:inline"}>Guardar</span>
     </Button>
   </div>
-) : (
+) : !isReadOnly ? (
   <Button
     type="button"
     variant="outline"
@@ -403,7 +409,7 @@ export function ExplorerDetail({
     <Edit className="mr-2 h-4 w-4" />
     <span className={isDesktop ? "" : "hidden sm:inline"}>Editar</span>
   </Button>
-)}
+) : null}
 
 
       </header>

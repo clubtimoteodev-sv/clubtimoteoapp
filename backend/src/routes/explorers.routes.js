@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
 
 const router = Router();
 router.use(auth);
@@ -34,17 +35,15 @@ const createSchema = z.object({
 
 router.get("/", async (req, res) => {
   try {
-    console.log("1. Usuario leyendo token:", req.user); // Veremos si el token trae el destacamentoId
-    
-    const destacamentoId = req.user.destacamentoId;
+    const whereClause = buildTerritoryWhere(req);
     
     const list = await prisma.explorer.findMany({
-      where: { destacamentoId },
+      where: whereClause,
+      include: { destacamento: true },
       orderBy: { createdAt: "desc" }
     });
 
-    console.log(`2. Se encontraron ${list.length} exploradores para la iglesia ${destacamentoId}`); // Veremos cuántos niños encontró Prisma
-    
+
     res.json(list);
   } catch (error) {
     console.error("Error getting explorers:", error);
@@ -55,13 +54,14 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const destacamentoId = req.user.destacamentoId;
+    const whereClause = buildTerritoryWhere(req);
 
-    const explorer = await prisma.explorer.findUnique({
+    const explorer = await prisma.explorer.findFirst({
       where: { 
         id,
-        destacamentoId 
-      }
+        ...whereClause
+      },
+      include: { destacamento: true }
     });
 
     if (!explorer) {
@@ -75,7 +75,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireNotTerritorial, async (req, res) => {
   try {
     const destacamentoId = req.user.destacamentoId;
     const parsed = createSchema.safeParse(req.body);
@@ -104,7 +104,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", requireNotTerritorial, async (req, res) => {
   try {
     const id = req.params.id;
     const destacamentoId = req.user.destacamentoId;
@@ -147,7 +147,7 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireNotTerritorial, async (req, res) => {
   try {
     const id = req.params.id;
     const destacamentoId = req.user.destacamentoId;

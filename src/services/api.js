@@ -1,4 +1,4 @@
-const API = "https://x-production-e359.up.railway.app/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
 export function getToken() {
   return localStorage.getItem("token");
@@ -7,7 +7,14 @@ export function getToken() {
 export async function apiFetch(path, options = {}) {
   const token = getToken();
 
-  const res = await fetch(API + path, {
+  let finalPath = path;
+  const overrideId = localStorage.getItem("overrideDestacamentoId");
+  if (overrideId && (!options.method || options.method === "GET")) {
+    const divider = path.includes("?") ? "&" : "?";
+    finalPath = `${path}${divider}destacamentoId=${overrideId}`;
+  }
+
+  const res = await fetch(API + finalPath, {
     ...options,
     headers: {
       "Content-Type": "application/json",

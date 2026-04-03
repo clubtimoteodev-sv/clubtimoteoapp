@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
 
 const router = Router();
 router.use(auth);
@@ -14,13 +15,24 @@ const createMeetingSchema = z.object({
 router.get("/upcoming", async (req, res) => {
   try {
     const now = new Date();
+    
+    const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+    const month = req.query.month ? parseInt(req.query.month) : now.getMonth();
+    
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 1);
 
     const meetings = await prisma.meeting.findMany({
       where: {
         date: {
-          gte: now
+          gte: startOfMonth,
+          lt: endOfMonth
         },
-        destacamentoId: req.user.destacamentoId // FILTRO: Solo reuniones futuras de tu iglesia
+        ...buildTerritoryWhere(req) // FILTRO TERRITORIO
+      },
+      include: {
+        destacamento: true,
+        _count: { select: { records: true } }
       },
       orderBy: {
         date: "asc"
@@ -34,7 +46,7 @@ router.get("/upcoming", async (req, res) => {
   }
 });
 
-router.post("/meetings", async (req, res) => {
+router.post("/meetings", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = createMeetingSchema.safeParse(req.body);
 
@@ -59,7 +71,7 @@ router.post("/meetings", async (req, res) => {
   }
 });
 
-router.delete("/meetings/:id", async (req, res) => {
+router.delete("/meetings/:id", requireNotTerritorial, async (req, res) => {
   try {
     const id = req.params.id;
 

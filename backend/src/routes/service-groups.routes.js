@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
 
 const router = Router();
 router.use(auth);
@@ -15,8 +16,7 @@ const createServiceGroupSchema = z.object({
 router.get("/", async (req, res) => {
   try {
     const groups = await prisma.serviceGroup.findMany({
-      // SEGURIDAD: Solo traer los grupos de la iglesia actual
-      where: { destacamentoId: req.user.destacamentoId },
+      where: buildTerritoryWhere(req),
       orderBy: { date: "desc" },
       include: {
         members: {
@@ -38,8 +38,11 @@ router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
-    const group = await prisma.serviceGroup.findUnique({
-      where: { id },
+    const group = await prisma.serviceGroup.findFirst({
+      where: { 
+        id,
+        ...buildTerritoryWhere(req)
+      },
       include: {
         members: {
           include: {
@@ -59,8 +62,8 @@ router.get("/:id", async (req, res) => {
       },
     });
 
-    // SEGURIDAD: Verificar que el grupo exista y pertenezca a la iglesia del usuario
-    if (!group || group.destacamentoId !== req.user.destacamentoId) {
+    // SEGURIDAD: Verificar que el grupo exista y pertenezca a la iglesia o territorio
+    if (!group) {
       return res.status(404).json({ msg: "Grupo no encontrado o no tienes permiso" });
     }
 
@@ -71,7 +74,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = createServiceGroupSchema.safeParse(req.body);
 
@@ -130,7 +133,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", requireNotTerritorial, async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -204,7 +207,7 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireNotTerritorial, async (req, res) => {
   try {
     const id = req.params.id;
 

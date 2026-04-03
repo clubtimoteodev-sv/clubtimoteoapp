@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere } from "../utils/territory.js";
 
 const router = Router();
 
@@ -12,8 +13,7 @@ router.get("/summary", async (req, res) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // Obtenemos el ID de la iglesia del usuario que inició sesión
-    const destacamentoId = req.user.destacamentoId; 
+    const whereClause = buildTerritoryWhere(req);
 
     const [
       explorersCount,
@@ -27,13 +27,13 @@ router.get("/summary", async (req, res) => {
     ] = await Promise.all([
       // 1. Conteo de exploradores de la iglesia
       prisma.explorer.count({
-        where: { destacamentoId }
+        where: whereClause
       }),
 
       // 2. Reuniones del mes de la iglesia
       prisma.meeting.findMany({
         where: {
-          destacamentoId,
+          ...whereClause,
           date: {
             gte: monthStart,
             lt: nextMonthStart
@@ -49,14 +49,14 @@ router.get("/summary", async (req, res) => {
 
       // 3. Todos los movimientos financieros de la iglesia
       prisma.financeMovement.findMany({
-        where: { destacamentoId }
+        where: whereClause
       }),
 
       // 4. Asistencia a grupos de servicio de la iglesia
       prisma.serviceAttendance.count({
         where: {
           group: {
-             destacamentoId // Filtramos por la relación del grupo
+             ...whereClause // Filtramos por la relación del grupo
           },
           takenAt: {
             gte: monthStart,
@@ -68,7 +68,7 @@ router.get("/summary", async (req, res) => {
       // 5. Próximas reuniones de la iglesia
       prisma.meeting.findMany({
         where: {
-          destacamentoId,
+          ...whereClause,
           date: {
             gte: now
           }
@@ -76,7 +76,7 @@ router.get("/summary", async (req, res) => {
         orderBy: {
           date: "asc"
         },
-        take: 5,
+        take: 3,
         select: {
           id: true,
           date: true,
@@ -86,7 +86,7 @@ router.get("/summary", async (req, res) => {
 
       // 6. Exploradores recientes de la iglesia
       prisma.explorer.findMany({
-        where: { destacamentoId },
+        where: whereClause,
         orderBy: {
           createdAt: "desc"
         },
@@ -101,7 +101,7 @@ router.get("/summary", async (req, res) => {
 
       // 7. Última reunión de la iglesia
       prisma.meeting.findFirst({
-        where: { destacamentoId },
+        where: whereClause,
         orderBy: {
           date: "desc"
         },
@@ -112,7 +112,7 @@ router.get("/summary", async (req, res) => {
 
       // 8. Movimientos financieros recientes de la iglesia
       prisma.financeMovement.findMany({
-        where: { destacamentoId },
+        where: whereClause,
         orderBy: {
           date: "desc"
         },

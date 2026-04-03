@@ -25,7 +25,8 @@ export function auth(req, res, next) {
     req.user = {
       id: payload.sub || payload.id,
       role: payload.role,
-      destacamentoId: payload.destacamentoId // Esto es lo que usa el controlador de exploradores
+      destacamentoId: payload.destacamentoId, // Esto es lo que usa el controlador de exploradores
+      territorioId: payload.territorioId
     };
 
     next();

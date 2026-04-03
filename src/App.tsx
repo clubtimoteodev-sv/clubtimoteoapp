@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { Eye, X } from "lucide-react";
 
 import { Sidebar } from "./components/Sidebar";
 import { MobileHeader } from "./components/MobileHeader";
 import { Login } from "./components/Login";
 import Home from "./components/Home";
 import { CalendarView } from "./components/CalendarView";
+import RegionalExplorers from "./components/RegionalExplorers";
+import RegionalComparison from "./components/RegionalComparison";
 import { PersonalDataForm } from "./components/PersonalDataForm";
 import { ExplorersList } from "./components/ExplorersList";
 import { ExplorerDetail } from "./components/ExplorerDetail";
@@ -15,6 +18,8 @@ import { ServiceGroups } from "./components/ServiceGroups";
 import { ServiceScheduleCreation } from "./components/ServiceScheduleCreation";
 import { ServiceScheduleAttendance } from "./components/ServiceScheduleAttendance";
 import { ServiceScheduleReport } from "./components/ServiceScheduleReport";
+import DashboardTerritorial from "./components/DashboardTerritorial";
+import RegionalReport from "./components/RegionalReport";
 
 type AttendanceReportSource = "menu" | "explorer-detail";
 
@@ -24,13 +29,24 @@ export default function App() {
   });
 
   const [activeSection, setActiveSection] = useState(() => {
-    return localStorage.getItem("token") ? "home" : "login";
+    if (!localStorage.getItem("token")) return "login";
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (user.role === "lider territorial") return "territorial-home";
+      }
+    } catch { /* ignore */ }
+    return "home";
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedExplorerId, setSelectedExplorerId] = useState<string | null>(null);
   const [selectedServiceGroupId, setSelectedServiceGroupId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [drilledName, setDrilledName] = useState<string>(() => {
+    return localStorage.getItem("overrideDestacamentoId") ? "Iglesia Seleccionada" : "";
+  });
   const [attendanceReportSource, setAttendanceReportSource] =
     useState<AttendanceReportSource>("menu");
 
@@ -48,10 +64,41 @@ export default function App() {
     } catch { /* ignore */ }
   }, [isAuthenticated]);
 
-  const goHome = () => setActiveSection("home");
+  const goHome = () => {
+    const isDrilledDown = !!localStorage.getItem("overrideDestacamentoId");
+    if (isDrilledDown) {
+      setActiveSection("view-destacamento");
+    } else if (currentUser?.role === "lider territorial") {
+      setActiveSection("territorial-home");
+    } else {
+      setActiveSection("home");
+    }
+  };
+
+  const exitDrillDown = () => {
+    localStorage.removeItem("overrideDestacamentoId");
+    setDrilledName("");
+    if (currentUser?.role === "lider territorial") {
+      setActiveSection("territorial-home");
+    } else {
+      setActiveSection("home");
+    }
+  };
 
   const handleLogin = (_token: string) => {
     setIsAuthenticated(true);
+    localStorage.removeItem("overrideDestacamentoId");
+    setDrilledName("");
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (user.role === "lider territorial") {
+          setActiveSection("territorial-home");
+          return;
+        }
+      }
+    } catch { /* ignore */ }
     setActiveSection("home");
   };
 
@@ -67,6 +114,20 @@ export default function App() {
   };
 
   const handleSidebarNavigate = (section: string) => {
+    if (section.startsWith("view-destacamento:")) {
+      const [, id, nombre] = section.split(":");
+      localStorage.setItem("overrideDestacamentoId", id);
+      setDrilledName(nombre);
+      setActiveSection("view-destacamento");
+      setIsSidebarOpen(false);
+      return;
+    }
+
+    if (section === "territorial-home") {
+      localStorage.removeItem("overrideDestacamentoId");
+      setDrilledName("");
+    }
+
     if (section === "attendance-taking") {
       setSelectedMeetingId(null);
     }
@@ -103,6 +164,12 @@ export default function App() {
   const getSectionTitle = () => {
     const titles: Record<string, string> = {
       home: "Dashboard",
+      "view-destacamento": "Dashboard de Iglesia",
+      "territorial-home": "Dashboard Territorial",
+      "regional-report": "Reporte Regional",
+      "regional-comparison": "Destacamentos Pro",
+      "regional-attendance": "Asistencia Territorial",
+      "churches-list": "Exporadores de Región",
       calendar: "Calendario",
       "personal-data": "Datos personales",
       "explorers-list": "Exploradores",
@@ -123,6 +190,35 @@ export default function App() {
     switch (activeSection) {
       case "home":
         return <Home />;
+
+      case "view-destacamento":
+        // key prop forces React to unmount and remount Home when the drilledName changes,
+        // which makes it re-fetch the dashboard data for the newly selected church.
+        return <Home key={drilledName} />;
+
+      case "territorial-home":
+        return <DashboardTerritorial user={currentUser} />;
+
+      case "regional-report":
+        return <RegionalReport onBack={goHome} />;
+
+      case "regional-comparison":
+        return (
+          <RegionalComparison 
+            onBack={goHome} 
+            onViewDestacamento={(id, name) => handleSidebarNavigate(`view-destacamento:${id}:${name}`)} 
+          />
+        );
+
+      case "regional-attendance":
+        return (
+          <AttendanceReport
+            onBack={goHome}
+          />
+        );
+
+      case "churches-list":
+        return <RegionalExplorers onBack={goHome} />;
 
       case "calendar":
         return (
@@ -252,8 +348,24 @@ export default function App() {
           title={getSectionTitle()}
         />
 
-        <main style={{ flex: 1, minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
-          {renderContent()}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
+          {drilledName && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-orange-50 border-b border-orange-200 px-4 py-3 shrink-0">
+              <span className="text-orange-700 text-sm font-semibold flex items-center gap-2 w-full sm:w-auto overflow-hidden">
+                <Eye size={18} className="shrink-0" />
+                <span className="truncate">Modo Supervisor: <strong>{drilledName}</strong></span>
+              </span>
+              <button 
+                onClick={exitDrillDown} 
+                className="w-full sm:w-auto bg-white border border-orange-200 text-orange-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1 transition-colors hover:bg-orange-100 shrink-0 shadow-sm"
+              >
+                <X size={14} /> Salir del Modo
+              </button>
+            </div>
+          )}
+          <div style={{ flex: 1 }}>
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>

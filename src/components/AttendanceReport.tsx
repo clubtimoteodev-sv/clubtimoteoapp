@@ -51,6 +51,7 @@ interface MeetingApi {
   type: string;
   createdAt?: string;
   records?: AttendanceRecordApi[];
+  destacamento?: { nombre: string };
 }
 
 interface AttendanceRecordView {
@@ -66,6 +67,7 @@ interface MeetingView {
   date: string;
   meetingType: string;
   meetingTypeName: string;
+  destacamentoNombre?: string;
   attendanceRecords: AttendanceRecordView[];
 }
 
@@ -185,6 +187,7 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
       date: meeting.date,
       meetingType: normalizedType,
       meetingTypeName: normalizedType,
+      destacamentoNombre: meeting.destacamento?.nombre,
       attendanceRecords: (meeting.records || []).map((record) => ({
         explorerId: record.explorerId,
         explorerName: record.explorer
@@ -655,14 +658,24 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
           <div className="space-y-4">
             {filteredMeetings.map((meeting) => {
               const stats = getAttendanceStats(meeting);
+              const now = new Date();
+              const isPast = new Date(meeting.date) <= now;
+              const hasNoAttendance = meeting.attendanceRecords.length === 0;
+              const missedAttendance = isPast && hasNoAttendance;
 
               return (
                 <Card
                   key={meeting.id}
-                  className="cursor-pointer border"
+                  className={`cursor-pointer border ${missedAttendance ? 'border-red-200 bg-red-50/50' : ''}`}
                   onClick={() => openMeeting(meeting.id)}
                 >
                   <CardContent className="p-4">
+                    {missedAttendance && (
+                      <div className="mb-3 flex items-center gap-2 rounded-md bg-red-100 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0"></span>
+                        Reunión pasada — Asistencia no registrada
+                      </div>
+                    )}
                     <div className="mb-3 flex items-start space-x-3">
                       <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500">
                         <CalendarIcon className="h-6 w-6 text-white" />
@@ -680,6 +693,11 @@ export function AttendanceReport({ onBack, initialMeetingId }: AttendanceReportP
                         <p className="text-xs text-muted-foreground">
                           {formatShortDate(meeting.date)}
                         </p>
+                        {meeting.destacamentoNombre && (
+                          <p className="text-xs text-indigo-500 font-medium mt-0.5">
+                            {meeting.destacamentoNombre}
+                          </p>
+                        )}
                       </div>
                     </div>
 

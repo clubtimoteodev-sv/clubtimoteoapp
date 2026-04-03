@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
 
 const router = Router();
 router.use(auth);
@@ -20,8 +21,7 @@ router.get("/", async (req, res) => {
   try {
     const { type, category, startDate, endDate, q } = req.query;
 
-    // SEGURIDAD: Inicializamos el where obligando a buscar solo en la iglesia actual
-    const where = { destacamentoId: req.user.destacamentoId };
+    const where = buildTerritoryWhere(req);
 
     if (type && type !== "all") {
       where.type = type;
@@ -73,7 +73,7 @@ router.get("/:id", async (req, res) => {
     const movement = await prisma.financeMovement.findFirst({
       where: { 
         id: req.params.id,
-        destacamentoId: req.user.destacamentoId
+        ...buildTerritoryWhere(req)
       },
     });
 
@@ -88,7 +88,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = movementSchema.safeParse(req.body);
 
@@ -118,7 +118,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = movementSchema.safeParse(req.body);
 
@@ -157,7 +157,7 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireNotTerritorial, async (req, res) => {
   try {
     // SEGURIDAD: Verificar que sea de la iglesia antes de borrar
     const existing = await prisma.financeMovement.findFirst({

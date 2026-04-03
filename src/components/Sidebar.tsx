@@ -9,10 +9,15 @@ import {
   Calendar,
   LogOut,
   X,
-  MapPin, // Añadido para el icono del destacamento
+  MapPin,
+  BarChart3,
+  Church,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../services/api";
 
 interface NavItemProps {
   icon: LucideIcon;
@@ -98,17 +103,57 @@ export function Sidebar({
   destacamentoName, // NUEVO
 }: SidebarProps) {
   const isDesktop = useIsDesktop();
+  const [destacamentos, setDestacamentos] = useState<any[]>([]);
 
-  const navItems = [
-    { id: "home", label: "Dashboard", icon: LayoutDashboard },
-    { id: "calendar", label: "Calendario", icon: Calendar },
-    { id: "personal-data", label: "Datos personales", icon: UserCircle },
-    { id: "explorers-list", label: "Exploradores", icon: Users },
-    { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
-    { id: "attendance-report", label: "Ver asistencia", icon: Eye },
-    { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
-    { id: "finance-manager", label: "Finanzas", icon: DollarSign },
-  ];
+  const isTerritorial = userRole === "lider territorial";
+  const isDrillDown = !!localStorage.getItem("overrideDestacamentoId");
+
+  useEffect(() => {
+    if (isTerritorial) {
+      apiFetch("/territorio/destacamentos")
+        .then(setDestacamentos)
+        .catch(console.error);
+    }
+  }, [isTerritorial]);
+
+  const navItems: any[] = [];
+  
+  // Dashboard es universal, el ID cambia según contexto
+  navItems.push({ 
+    id: isTerritorial && !isDrillDown ? "territorial-home" : (isDrillDown ? "view-destacamento" : "home"), 
+    label: "Dashboard", 
+    icon: LayoutDashboard 
+  });
+  
+  // Calendario es universal (pero renderiza distinto internamente)
+  navItems.push({ id: "calendar", label: "Calendario", icon: Calendar });
+
+  if (isTerritorial && !isDrillDown) {
+    navItems.push(
+      { id: "regional-report", label: "Reporte Regional", icon: BarChart3 },
+      { id: "regional-comparison", label: "Destacamentos Pro", icon: UsersRound },
+      { id: "regional-attendance", label: "Ver Asistencia", icon: Eye },
+      { id: "churches-list", label: "Exploradores de Región", icon: Church }
+    );
+  } else if (isTerritorial && isDrillDown) {
+    navItems.push(
+      { id: "explorers-list", label: "Exploradores", icon: Users },
+      { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
+      { id: "attendance-report", label: "Ver asistencia", icon: Eye },
+      { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
+      { id: "finance-manager", label: "Finanzas", icon: DollarSign }
+    );
+  } else {
+    // Líder normal de destacamento
+    navItems.push(
+      { id: "personal-data", label: "Datos personales", icon: UserCircle },
+      { id: "explorers-list", label: "Exploradores", icon: Users },
+      { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
+      { id: "attendance-report", label: "Ver asistencia", icon: Eye },
+      { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
+      { id: "finance-manager", label: "Finanzas", icon: DollarSign }
+    );
+  }
 
   const handleNavigate = (section: string) => {
     onNavigate(section);
@@ -216,10 +261,37 @@ export function Sidebar({
               key={item.id}
               icon={item.icon}
               label={item.label}
-              active={activeSection === item.id}
+              active={activeSection === item.id || (item.id === "home" && activeSection === "view-destacamento")}
               onClick={() => handleNavigate(item.id)}
             />
           ))}
+
+          {isTerritorial && destacamentos.length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <div style={{ marginBottom: "0.5rem", paddingLeft: "0.5rem", fontSize: "0.75rem", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em" }}>
+                MIS DESTACAMENTOS
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+                {destacamentos.map((dest) => (
+                  <button
+                    key={dest.id}
+                    onClick={() => handleNavigate(`view-destacamento:${dest.id}:${dest.nombre}`)}
+                    style={{
+                      width: "100%", textAlign: "left", padding: "0.5rem 1rem", fontSize: "0.875rem",
+                      color: "#4b5563", background: "transparent", border: "none", cursor: "pointer",
+                      borderRadius: "0.5rem", display: "flex", alignItems: "center"
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <Church size={14} style={{ marginRight: "0.5rem", color: "#6b7280" }} />
+                    <span style={{ flex: 1 }}>{dest.nombre}</span>
+                    <ChevronRight size={14} style={{ color: "#9ca3af" }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 

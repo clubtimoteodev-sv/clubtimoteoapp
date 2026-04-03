@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
+import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
 
 const router = Router();
 router.use(auth);
@@ -22,9 +23,9 @@ const saveAttendanceSchema = z.object({
 router.get("/meetings", async (req, res) => {
   try {
     const meetings = await prisma.meeting.findMany({
-      // FILTRO: Solo trae las reuniones de la iglesia del usuario
-      where: { destacamentoId: req.user.destacamentoId }, 
+      where: buildTerritoryWhere(req), 
       include: {
+        destacamento: true,
         records: {
           include: {
             explorer: true
@@ -46,9 +47,10 @@ router.get("/meetings/:id", async (req, res) => {
     const meeting = await prisma.meeting.findFirst({
       where: { 
         id: req.params.id,
-        destacamentoId: req.user.destacamentoId // SEGURIDAD: Evita espiar otras iglesias
+        ...buildTerritoryWhere(req) // SEGURIDAD Y TERRITORIO
       },
       include: {
+        destacamento: true,
         records: {
           include: {
             explorer: true
@@ -68,7 +70,7 @@ router.get("/meetings/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = saveAttendanceSchema.safeParse(req.body);
 
@@ -134,7 +136,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.patch("/meetings/:id", async (req, res) => {
+router.patch("/meetings/:id", requireNotTerritorial, async (req, res) => {
   try {
     const parsed = saveAttendanceSchema.safeParse(req.body);
 
@@ -184,9 +186,9 @@ router.patch("/meetings/:id", async (req, res) => {
 
 router.get("/explorer/:explorerId", async (req, res) => {
   try {
-    // SEGURIDAD: Verifica que el niño pertenezca a la iglesia del usuario
+    // SEGURIDAD: Verifica que el niño pertenezca a la iglesia o territorio
     const explorer = await prisma.explorer.findFirst({
-      where: { id: req.params.explorerId, destacamentoId: req.user.destacamentoId }
+      where: { id: req.params.explorerId, ...buildTerritoryWhere(req) }
     });
     
     if (!explorer) return res.status(404).json({ msg: "Explorador no encontrado en tu destacamento" });
@@ -213,7 +215,7 @@ router.get("/explorer/:explorerId", async (req, res) => {
   }
 });
 
-router.delete("/meetings/:id", async (req, res) => {
+router.delete("/meetings/:id", requireNotTerritorial, async (req, res) => {
   try {
     const meetingId = req.params.id;
 

@@ -56,6 +56,8 @@ const outpostInfo = {
   leader: storedUser.name || "Líder",
 };
 
+  const isReadOnly = storedUser.role === "lider territorial";
+
   const explorerColumns = [
     { key: "codigoInterno" as const, label: "Código" },
     { key: "nombre" as const, label: "Nombres" },
@@ -179,9 +181,11 @@ const outpostInfo = {
               reportTitle="Lista Oficial de Exploradores"
               outpostInfo={outpostInfo}
             />
-            <Button size="sm" onClick={onAddNew}>
-              <UserPlus className="h-4 w-4 mr-1" /> Nuevo
-            </Button>
+            {!isReadOnly && (
+              <Button size="sm" onClick={onAddNew}>
+                <UserPlus className="h-4 w-4 mr-1" /> Nuevo
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -209,14 +213,16 @@ const outpostInfo = {
               reportTitle="Lista Oficial de Exploradores"
               outpostInfo={outpostInfo}
             />
-            <button
-              type="button"
-              onClick={onAddNew}
-              style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "#111827", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
-            >
-              <UserPlus style={{ width: "0.9rem", height: "0.9rem" }} />
-              Nuevo
-            </button>
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={onAddNew}
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "#111827", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
+              >
+                <UserPlus style={{ width: "0.9rem", height: "0.9rem" }} />
+                Nuevo
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -275,7 +281,7 @@ const outpostInfo = {
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 flex-shrink-0 p-0"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         onViewExplorer(explorer.id);
                       }}

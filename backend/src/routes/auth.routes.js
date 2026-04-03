@@ -82,7 +82,8 @@ router.post("/login", async (req, res) => {
     { 
       sub: user.id, 
       role: user.role,
-      destacamentoId: user.destacamentoId 
+      destacamentoId: user.destacamentoId,
+      territorioId: user.territorioId
     }, 
     JWT_SECRET, 
     { expiresIn: "7d" }
@@ -96,6 +97,7 @@ router.post("/login", async (req, res) => {
       email: user.email, 
       role: user.role,
       destacamentoId: user.destacamentoId,
+      territorioId: user.territorioId,
       destacamentoNombre: user.destacamento?.nombre || null,
       destacamentoCiudad: user.destacamento?.ciudad || null,
       destacamentoIglesia: user.destacamento?.iglesia || null,
