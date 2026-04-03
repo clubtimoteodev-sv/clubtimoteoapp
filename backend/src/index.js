@@ -25,7 +25,7 @@ app.use(cors({
       "http://localhost:5173",
       "http://localhost:3000", 
       "https://clubtimoteo.vercel.app",
-      "https://www.clubtimoteo.com"
+      "https://www.app.clubtimoteo.com"
     ];
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       callback(null, true);
