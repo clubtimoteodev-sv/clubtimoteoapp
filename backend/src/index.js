@@ -23,7 +23,7 @@ app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
       "http://localhost:5173",
-      "http://localhost:3000", "
+      "http://localhost:3000", 
       "https://clubtimoteo.vercel.app",
       "https://www.clubtimoteo.com"
     ];
