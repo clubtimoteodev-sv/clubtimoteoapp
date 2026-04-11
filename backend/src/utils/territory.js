@@ -1,5 +1,5 @@
 export function buildTerritoryWhere(req) {
-  if (req.user.role === "lider territorial") {
+  if (req.user.role === "lider_territorial") {
     if (req.query.destacamentoId) {
       return {
         destacamentoId: req.query.destacamentoId,
@@ -18,7 +18,7 @@ export function buildTerritoryWhere(req) {
 }
 
 export function requireNotTerritorial(req, res, next) {
-  if (req.user.role === "lider territorial") {
+  if (req.user.role === "lider_territorial") {
     return res.status(403).json({ msg: "Acceso denegado: Modo de solo lectura" });
   }
   next();

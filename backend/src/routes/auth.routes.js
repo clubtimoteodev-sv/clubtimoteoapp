@@ -88,7 +88,8 @@ router.post("/login", loginLimiter, async (req, res) => {
     include: {
       destacamento: {
         select: { id: true, nombre: true, ciudad: true, iglesia: true, encargado: true }
-      }
+      },
+      territorio: true
     }
   });
   if (!user) return res.status(401).json({ msg: "Credenciales inválidas" });

@@ -23,6 +23,11 @@ import RegionalReport from "./components/RegionalReport";
 
 type AttendanceReportSource = "menu" | "explorer-detail";
 
+const ProtectedRoute = ({ allowedRoles, currentRole, children }: { allowedRoles: string[], currentRole?: string, children: React.ReactNode }) => {
+  if (!currentRole || !allowedRoles.includes(currentRole)) return <Home />;
+  return <>{children}</>;
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem("token");
@@ -34,7 +39,7 @@ export default function App() {
       const raw = localStorage.getItem("user");
       if (raw) {
         const user = JSON.parse(raw);
-        if (user.role === "lider territorial") return "territorial-home";
+        if (user.role === "lider_territorial") return "territorial-home";
       }
     } catch { /* ignore */ }
     return "home";
@@ -68,7 +73,7 @@ export default function App() {
     const isDrilledDown = !!localStorage.getItem("overrideDestacamentoId");
     if (isDrilledDown) {
       setActiveSection("view-destacamento");
-    } else if (currentUser?.role === "lider territorial") {
+    } else if (currentUser?.role === "lider_territorial") {
       setActiveSection("territorial-home");
     } else {
       setActiveSection("home");
@@ -78,7 +83,7 @@ export default function App() {
   const exitDrillDown = () => {
     localStorage.removeItem("overrideDestacamentoId");
     setDrilledName("");
-    if (currentUser?.role === "lider territorial") {
+    if (currentUser?.role === "lider_territorial") {
       setActiveSection("territorial-home");
     } else {
       setActiveSection("home");
@@ -93,7 +98,7 @@ export default function App() {
       const raw = localStorage.getItem("user");
       if (raw) {
         const user = JSON.parse(raw);
-        if (user.role === "lider territorial") {
+        if (user.role === "lider_territorial") {
           setActiveSection("territorial-home");
           return;
         }
@@ -202,28 +207,42 @@ export default function App() {
         return <Home key={drilledName} />;
 
       case "territorial-home":
-        return <DashboardTerritorial user={currentUser} />;
+        return (
+            <ProtectedRoute allowedRoles={["lider_territorial"]} currentRole={currentUser?.role}>
+              <DashboardTerritorial user={currentUser} />
+            </ProtectedRoute>
+        );
 
       case "regional-report":
-        return <RegionalReport onBack={goHome} />;
+        return (
+            <ProtectedRoute allowedRoles={["lider_territorial"]} currentRole={currentUser?.role}>
+              <RegionalReport onBack={goHome} />
+            </ProtectedRoute>
+        );
 
       case "regional-comparison":
         return (
-          <RegionalComparison 
-            onBack={goHome} 
-            onViewDestacamento={(id, name) => handleSidebarNavigate(`view-destacamento:${id}:${name}`)} 
-          />
+          <ProtectedRoute allowedRoles={["lider_territorial"]} currentRole={currentUser?.role}>
+            <RegionalComparison 
+              onBack={goHome} 
+              onViewDestacamento={(id, name) => handleSidebarNavigate(`view-destacamento:${id}:${name}`)} 
+            />
+          </ProtectedRoute>
         );
 
       case "regional-attendance":
         return (
-          <AttendanceReport
-            onBack={goHome}
-          />
+          <ProtectedRoute allowedRoles={["lider_territorial"]} currentRole={currentUser?.role}>
+            <AttendanceReport onBack={goHome} />
+          </ProtectedRoute>
         );
 
       case "churches-list":
-        return <RegionalExplorers onBack={goHome} />;
+        return (
+          <ProtectedRoute allowedRoles={["lider_territorial"]} currentRole={currentUser?.role}>
+            <RegionalExplorers onBack={goHome} />
+          </ProtectedRoute>
+        );
 
       case "calendar":
         return (

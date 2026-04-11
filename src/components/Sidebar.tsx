@@ -95,7 +95,9 @@ function formatRole(role?: string): string {
     territorial: "Líder Territorial",
     // ✅ FIX P2: Roles inconsistentes — ambas variantes del rol territorial
     "lider territorial": "Líder Territorial",
+    "lider_territorial": "Líder Territorial",
     "Lider Destacamento": "Administrador",
+    "lider_destacamento": "Administrador",
   };
   return role ? (map[role] ?? role) : "Usuario";
 }
@@ -114,7 +116,7 @@ export function Sidebar({
   const isDesktop = useIsDesktop();
   const [destacamentos, setDestacamentos] = useState<Destacamento[]>([]);
 
-  const isTerritorial = userRole === "lider territorial";
+  const isTerritorial = userRole === "lider_territorial";
   // ✅ PERF P2: isDrillDown memoizado — no lee localStorage en cada render
   const isDrillDown = useMemo(() => !!localStorage.getItem("overrideDestacamentoId"), [activeSection]);
 

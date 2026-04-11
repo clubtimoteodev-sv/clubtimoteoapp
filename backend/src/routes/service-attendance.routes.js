@@ -79,7 +79,7 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
     }
 
-    if (req.user.role === "lider territorial") {
+    if (req.user.role === "lider_territorial") {
       // Verificar que el grupo provenga de un destacamento dentro del territorio del usuario
       const destacamento = await prisma.destacamento.findFirst({
         where: { id: record.group.destacamentoId, territorioId: req.user.territorioId }

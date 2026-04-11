@@ -1,4 +1,4 @@
-const API = "https://x-production-e359.up.railway.app/api";
+const API = "http://localhost:4000/api";
 
 export function getToken() {
   return localStorage.getItem("token");

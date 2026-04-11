@@ -7,7 +7,7 @@ router.use(auth);
 
 router.get("/destacamentos", async (req, res) => {
   try {
-    if (req.user.role !== "lider territorial") {
+    if (req.user.role !== "lider_territorial") {
       return res.status(403).json({ msg: "Acceso denegado: Se requiere rol de líder territorial" });
     }
 
@@ -43,7 +43,7 @@ router.get("/destacamentos", async (req, res) => {
 
 router.get("/stats", async (req, res) => {
   try {
-    if (req.user.role !== "lider territorial") {
+    if (req.user.role !== "lider_territorial") {
       return res.status(403).json({ msg: "Acceso denegado: Se requiere rol de líder territorial" });
     }
     const territorioId = req.user.territorioId;
@@ -98,7 +98,7 @@ router.get("/stats", async (req, res) => {
 
 router.get("/activity", async (req, res) => {
   try {
-    if (req.user.role !== "lider territorial") {
+    if (req.user.role !== "lider_territorial") {
       return res.status(403).json({ msg: "Acceso denegado" });
     }
     const territorioId = req.user.territorioId;
@@ -178,7 +178,7 @@ router.get("/activity", async (req, res) => {
 
 router.get("/comparativa", async (req, res) => {
   try {
-    if (req.user.role !== "lider territorial") return res.status(403).json({ msg: "Acceso denegado" });
+    if (req.user.role !== "lider_territorial") return res.status(403).json({ msg: "Acceso denegado" });
     const territorioId = req.user.territorioId;
     if (!territorioId) return res.status(400).json({ msg: "Sin territorio" });
 
@@ -266,7 +266,7 @@ router.get("/comparativa", async (req, res) => {
 
 router.get("/reporte-detallado", async (req, res) => {
   try {
-    if (req.user.role !== "lider territorial") return res.status(403).json({ msg: "Acceso denegado" });
+    if (req.user.role !== "lider_territorial") return res.status(403).json({ msg: "Acceso denegado" });
     const territorioId = req.user.territorioId;
     if (!territorioId) return res.status(400).json({ msg: "Sin territorio" });
 
