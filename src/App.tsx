@@ -252,6 +252,11 @@ export default function App() {
               setSelectedMeetingId(meetingId);
               setActiveSection("attendance-taking");
             }}
+            onViewAttendance={(meetingId: string) => {
+              setSelectedMeetingId(meetingId);
+              setAttendanceReportSource("menu");
+              setActiveSection("attendance-report");
+            }}
           />
         );
 

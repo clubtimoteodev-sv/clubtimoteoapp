@@ -33,6 +33,7 @@ type Meeting = {
 
 type CalendarViewProps = {
   onTakeAttendance: (meetingId: string) => void;
+  onViewAttendance: (meetingId: string) => void;
   onBack: () => void;
 };
 
@@ -53,7 +54,7 @@ const formatDisplayMonth = (date: Date) => {
   return str.replace(/\b[a-zA-Z]/g, (l) => l.toUpperCase());
 };
 
-export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
+export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: CalendarViewProps) {
   const isDesktop = useIsDesktop();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -161,20 +162,26 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
 
   // Stats rápidas del mes
   const now = new Date();
-  const completed = meetings.filter((m) => {
-    const d = new Date(m.date);
-    const past = now.getTime() > d.getTime();
-    return past && (m._count?.records ?? 0) > 0;
-  }).length;
-  const missed = meetings.filter((m) => {
+
+  // Clasificar reuniones: "canAct" = hoy o pasada (puede tomar/ver asistencia)
+  const completed = meetings.filter((m) => (m._count?.records ?? 0) > 0).length;
+  const pending = meetings.filter((m) => {
     const d = new Date(m.date);
     const isToday =
       d.getDate() === now.getDate() &&
       d.getMonth() === now.getMonth() &&
       d.getFullYear() === now.getFullYear();
-    return now.getTime() > d.getTime() && !isToday && (m._count?.records ?? 0) === 0;
+    const isPast = now.getTime() > d.getTime() && !isToday;
+    return (isToday || isPast) && (m._count?.records ?? 0) === 0;
   }).length;
-  const upcoming = meetings.filter((m) => new Date(m.date).getTime() > now.getTime()).length;
+  const upcoming = meetings.filter((m) => {
+    const d = new Date(m.date);
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+    return !isToday && new Date(m.date).getTime() > now.getTime();
+  }).length;
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
@@ -311,8 +318,8 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
                 <p className="text-xs text-slate-500 mt-0.5">Próximas</p>
               </div>
               <div className="px-4 py-3 text-center">
-                <p className="text-lg font-bold text-red-500">{missed}</p>
-                <p className="text-xs text-slate-500 mt-0.5">Sin asistencia</p>
+                <p className="text-lg font-bold text-amber-500">{pending}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Pendientes</p>
               </div>
             </div>
           )}
@@ -356,9 +363,15 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
                 dateObj.getMonth() === now.getMonth() &&
                 dateObj.getFullYear() === now.getFullYear();
 
-              const isPast = now.getTime() > dateObj.getTime() && !isToday;
+              // isPastDay: la fecha del CALENDARIO ya pasó (distinto día)
+              const isPastDay =
+                new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime() <
+                new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+              // canAct: hoy O cualquier día pasado → se puede tomar/ver asistencia
+              const canAct = isToday || isPastDay;
               const hasAttendance = (meeting._count?.records ?? 0) > 0;
-              const missedAttendance = isPast && !hasAttendance;
+              const isFuture = !isToday && !isPastDay;
 
               // Badge config
               type BadgeVariant = {
@@ -366,21 +379,22 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
                 className: string;
               };
               let badge: BadgeVariant;
-              if (missedAttendance) {
-                badge = { label: "Sin Asistencia", className: "bg-red-50 text-red-600 border border-red-200" };
+              if (hasAttendance) {
+                badge = { label: "Completada", className: "bg-green-50 text-green-700 border border-green-200" };
               } else if (isToday) {
                 badge = { label: "Hoy", className: "bg-blue-50 text-blue-700 border border-blue-200" };
-              } else if (isPast && hasAttendance) {
-                badge = { label: "Completada", className: "bg-green-50 text-green-700 border border-green-200" };
+              } else if (isPastDay) {
+                badge = { label: "Pendiente", className: "bg-amber-50 text-amber-700 border border-amber-200" };
               } else {
                 badge = { label: "Próxima", className: "bg-slate-100 text-slate-600 border border-slate-200" };
               }
 
-              // Card accent
-              const cardBorder = missedAttendance
-                ? "border-red-100"
+              const cardBorder = hasAttendance
+                ? "border-green-100"
                 : isToday
                 ? "border-blue-200 ring-1 ring-blue-100"
+                : isPastDay
+                ? "border-amber-100"
                 : "border-gray-200";
 
               return (
@@ -394,24 +408,24 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
                       {/* Ícono lateral con color contextual */}
                       <div
                         className={`shrink-0 rounded-xl p-2 ${
-                          missedAttendance
-                            ? "bg-red-50"
+                          hasAttendance
+                            ? "bg-green-50"
                             : isToday
                             ? "bg-blue-50"
-                            : isPast && hasAttendance
-                            ? "bg-green-50"
+                            : isPastDay
+                            ? "bg-amber-50"
                             : "bg-slate-100"
                         }`}
                       >
                         <CalendarIcon
                           size={16}
                           className={
-                            missedAttendance
-                              ? "text-red-500"
+                            hasAttendance
+                              ? "text-green-600"
                               : isToday
                               ? "text-blue-600"
-                              : isPast && hasAttendance
-                              ? "text-green-600"
+                              : isPastDay
+                              ? "text-amber-500"
                               : "text-slate-500"
                           }
                         />
@@ -454,14 +468,8 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
 
                   {/* Footer / acción */}
                   <div className="border-t border-slate-100 px-5 py-3">
-                    {missedAttendance && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-500">
-                        <AlertCircle size={15} />
-                        La asistencia no se tomó para esta reunión
-                      </div>
-                    )}
-
-                    {!missedAttendance && isToday && !isTerritorial && (
+                    {/* Reuniones pasadas O de hoy SIN asistencia: siempre mostrar botón */}
+                    {canAct && !hasAttendance && !isTerritorial && (
                       <button
                         onClick={() => onTakeAttendance(meeting.id)}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
@@ -471,22 +479,29 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
                       </button>
                     )}
 
-                    {!missedAttendance && isToday && isTerritorial && (
-                      <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors">
-                        Ver Detalles
-                      </button>
-                    )}
-
-                    {!missedAttendance && !isToday && !isPast && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400">
-                        Esta reunión aún no se ha realizado
+                    {/* Territorial no puede tomar asistencia, solo ver */}
+                    {canAct && !hasAttendance && isTerritorial && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-50 py-2.5 text-sm font-medium text-amber-600">
+                        <AlertCircle size={15} />
+                        El líder aún no ha tomado asistencia
                       </div>
                     )}
 
-                    {!missedAttendance && isPast && hasAttendance && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-green-50 py-2.5 text-sm font-medium text-green-600">
-                        <CheckCircle2 size={15} />
-                        Asistencia registrada correctamente
+                    {/* Asistencia ya tomada: botón Ver Detalles funcional */}
+                    {hasAttendance && (
+                      <button
+                        onClick={() => onViewAttendance(meeting.id)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-50 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-100 border border-green-200 transition-colors"
+                      >
+                        <CheckCircle2 size={16} />
+                        Ver asistencia registrada
+                      </button>
+                    )}
+
+                    {/* Futura: no se puede hacer nada */}
+                    {isFuture && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400">
+                        Esta reunión aún no se ha realizado
                       </div>
                     )}
                   </div>
