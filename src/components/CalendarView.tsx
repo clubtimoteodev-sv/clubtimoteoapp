@@ -203,7 +203,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
             </div>
           </div>
 
-          {!isTerritorial && !isCreating && (
+          {!isCreating && (
             <button
               onClick={() => setIsCreating(true)}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
@@ -468,42 +468,47 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
 
                   {/* Footer / acción */}
                   <div className="border-t border-slate-100 px-5 py-3">
-                    {/* LÍDER: tomar asistencia si aún no tiene y la fecha ya es hoy o pasó */}
-                    {!isTerritorial && !hasAttendance && canAct && (
-                      <button
-                        onClick={() => onTakeAttendance(meeting.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
-                      >
-                        <Users size={18} />
-                        Tomar Asistencia
-                      </button>
-                    )}
+                    {(() => {
+                      if (hasAttendance) {
+                        return (
+                          <button
+                            onClick={() => onViewAttendance(meeting.id)}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-50 py-3 text-sm font-bold text-green-700 hover:bg-green-100 border border-green-200 transition-colors shadow-sm"
+                          >
+                            <CheckCircle2 size={18} />
+                            Ver asistencia registrada
+                          </button>
+                        );
+                      }
 
-                    {/* TERRITORIAL: no tiene permisos para tomar, solo ve advertencia si pasó el día */}
-                    {isTerritorial && !hasAttendance && canAct && (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-bold text-red-600 border border-red-100">
-                        <AlertCircle size={16} />
-                        El líder aún no registra asistencia
-                      </div>
-                    )}
+                      if (!canAct) {
+                        return (
+                          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400 border border-slate-100">
+                            Esta reunión aún no se ha realizado
+                          </div>
+                        );
+                      }
 
-                    {/* CUALQUIERA: Si ya hay asistencia registrada, ver detalles */}
-                    {hasAttendance && (
-                      <button
-                        onClick={() => onViewAttendance(meeting.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-50 py-3 text-sm font-bold text-green-700 hover:bg-green-100 border border-green-200 transition-colors shadow-sm"
-                      >
-                        <CheckCircle2 size={18} />
-                        Ver asistencia registrada
-                      </button>
-                    )}
+                      // If we are here, hasAttendance is false AND canAct is true.
+                      if (isTerritorial) {
+                        return (
+                          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-bold text-red-600 border border-red-100">
+                            <AlertCircle size={16} />
+                            El líder aún no registra asistencia
+                          </div>
+                        );
+                      }
 
-                    {/* FUTURO: la fecha ni es hoy ni ha pasado */}
-                    {!canAct && !hasAttendance && (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400 border border-slate-100">
-                        Esta reunión aún no se ha realizado
-                      </div>
-                    )}
+                      return (
+                        <button
+                          onClick={() => onTakeAttendance(meeting.id)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
+                        >
+                          <Users size={18} />
+                          Tomar Asistencia
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               );
