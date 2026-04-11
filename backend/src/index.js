@@ -64,6 +64,17 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/territorio", territorioRoutes);
 
+// ✅ CLEAN CODE P2: Global error handler — captura errores no manejados en rutas
+app.use((err, _req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  const isDev = process.env.NODE_ENV === "development";
+  console.error(`[ERROR] ${err.message}`, isDev ? err.stack : "");
+  res.status(status).json({
+    msg: status < 500 ? err.message : "Error interno del servidor",
+    ...(isDev && { stack: err.stack })
+  });
+});
+
 // PORT for Railway
 const PORT = process.env.PORT || 8080;
 

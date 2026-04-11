@@ -16,8 +16,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../services/api";
+
+interface Destacamento {
+  id: string;
+  nombre: string;
+  ciudad?: string;
+}
 
 interface NavItemProps {
   icon: LucideIcon;
@@ -86,7 +92,10 @@ function formatRole(role?: string): string {
     superadmin: "Super Admin",
     lider: "Líder",
     director: "Director",
-    territorial: "Líder Territorial"
+    territorial: "Líder Territorial",
+    // ✅ FIX P2: Roles inconsistentes — ambas variantes del rol territorial
+    "lider territorial": "Líder Territorial",
+    "Lider Destacamento": "Administrador",
   };
   return role ? (map[role] ?? role) : "Usuario";
 }
@@ -103,10 +112,11 @@ export function Sidebar({
   destacamentoName, // NUEVO
 }: SidebarProps) {
   const isDesktop = useIsDesktop();
-  const [destacamentos, setDestacamentos] = useState<any[]>([]);
+  const [destacamentos, setDestacamentos] = useState<Destacamento[]>([]);
 
   const isTerritorial = userRole === "lider territorial";
-  const isDrillDown = !!localStorage.getItem("overrideDestacamentoId");
+  // ✅ PERF P2: isDrillDown memoizado — no lee localStorage en cada render
+  const isDrillDown = useMemo(() => !!localStorage.getItem("overrideDestacamentoId"), [activeSection]);
 
   useEffect(() => {
     if (isTerritorial) {
@@ -116,44 +126,46 @@ export function Sidebar({
     }
   }, [isTerritorial]);
 
-  const navItems: any[] = [];
-  
-  // Dashboard es universal, el ID cambia según contexto
-  navItems.push({ 
-    id: isTerritorial && !isDrillDown ? "territorial-home" : (isDrillDown ? "view-destacamento" : "home"), 
-    label: "Dashboard", 
-    icon: LayoutDashboard 
-  });
-  
-  // Calendario es universal (pero renderiza distinto internamente)
-  navItems.push({ id: "calendar", label: "Calendario", icon: Calendar });
+  // ✅ PERF P2: navItems memoizado — no se recalcula en cada re-render
+  const navItems = useMemo(() => {
+    const items: { id: string; label: string; icon: typeof LayoutDashboard }[] = [];
 
-  if (isTerritorial && !isDrillDown) {
-    navItems.push(
-      { id: "regional-report", label: "Reporte Regional", icon: BarChart3 },
-      { id: "regional-comparison", label: "Destacamentos Pro", icon: UsersRound },
-      { id: "regional-attendance", label: "Ver Asistencia", icon: Eye },
-      { id: "churches-list", label: "Exploradores de Región", icon: Church }
-    );
-  } else if (isTerritorial && isDrillDown) {
-    navItems.push(
-      { id: "explorers-list", label: "Exploradores", icon: Users },
-      { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
-      { id: "attendance-report", label: "Ver asistencia", icon: Eye },
-      { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
-      { id: "finance-manager", label: "Finanzas", icon: DollarSign }
-    );
-  } else {
-    // Líder normal de destacamento
-    navItems.push(
-      { id: "personal-data", label: "Datos personales", icon: UserCircle },
-      { id: "explorers-list", label: "Exploradores", icon: Users },
-      { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
-      { id: "attendance-report", label: "Ver asistencia", icon: Eye },
-      { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
-      { id: "finance-manager", label: "Finanzas", icon: DollarSign }
-    );
-  }
+    items.push({
+      id: isTerritorial && !isDrillDown ? "territorial-home" : (isDrillDown ? "view-destacamento" : "home"),
+      label: "Dashboard",
+      icon: LayoutDashboard
+    });
+
+    items.push({ id: "calendar", label: "Calendario", icon: Calendar });
+
+    if (isTerritorial && !isDrillDown) {
+      items.push(
+        { id: "regional-report", label: "Reporte Regional", icon: BarChart3 },
+        { id: "regional-comparison", label: "Destacamentos Pro", icon: UsersRound },
+        { id: "regional-attendance", label: "Ver Asistencia", icon: Eye },
+        { id: "churches-list", label: "Exploradores de Región", icon: Church }
+      );
+    } else if (isTerritorial && isDrillDown) {
+      items.push(
+        { id: "explorers-list", label: "Exploradores", icon: Users },
+        { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
+        { id: "attendance-report", label: "Ver asistencia", icon: Eye },
+        { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
+        { id: "finance-manager", label: "Finanzas", icon: DollarSign }
+      );
+    } else {
+      items.push(
+        { id: "personal-data", label: "Datos personales", icon: UserCircle },
+        { id: "explorers-list", label: "Exploradores", icon: Users },
+        { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
+        { id: "attendance-report", label: "Ver asistencia", icon: Eye },
+        { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
+        { id: "finance-manager", label: "Finanzas", icon: DollarSign }
+      );
+    }
+
+    return items;
+  }, [isTerritorial, isDrillDown]);
 
   const handleNavigate = (section: string) => {
     onNavigate(section);

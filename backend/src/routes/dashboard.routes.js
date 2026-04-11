@@ -47,9 +47,12 @@ router.get("/summary", async (req, res) => {
         }
       }),
 
-      // 3. Todos los movimientos financieros de la iglesia
+      // 3. ✅ FIX P1: Movimientos financieros filtrados por mes actual (ya no se suman todos los históricos)
       prisma.financeMovement.findMany({
-        where: whereClause
+        where: {
+          ...whereClause,
+          date: { gte: monthStart, lt: nextMonthStart }
+        }
       }),
 
       // 4. Asistencia a grupos de servicio de la iglesia

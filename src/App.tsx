@@ -103,12 +103,17 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    // ✅ SEGURIDAD: Limpiar TODA la sesión del localStorage
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("overrideDestacamentoId");
+    setCurrentUser(null);
     setIsAuthenticated(false);
     setActiveSection("login");
     setSelectedExplorerId(null);
     setSelectedServiceGroupId(null);
     setSelectedMeetingId(null);
+    setDrilledName("");
     setAttendanceReportSource("menu");
     setIsSidebarOpen(false);
   };

@@ -74,17 +74,21 @@ router.get("/:id", async (req, res) => {
       },
     });
 
-    // SEGURIDAD: Validar que el registro pertenezca a un grupo al que el usuario tiene acceso
+    // ✅ SEGURIDAD P1: Verificar acceso real al registro
     if (!record) {
       return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
     }
 
-    if (req.user.role === "lider territorial" && req.user.territorioId) {
-       // A quick check if needed: since `buildTerritoryWhere` is harder here (nested), just ignore explicit checks, 
-       // but we could just fetch `group { destacamento: { territorioId } }`. Let's assume it's caught because they are browsing it.
-       // Actually let's fetch carefully if needed. We'll skip complex check for findUnique because they can only get here if they know the ID.
-    } else if (record.group.destacamentoId !== req.user.destacamentoId && req.user.role !== "lider territorial") {
-       return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
+    if (req.user.role === "lider territorial") {
+      // Verificar que el grupo provenga de un destacamento dentro del territorio del usuario
+      const destacamento = await prisma.destacamento.findFirst({
+        where: { id: record.group.destacamentoId, territorioId: req.user.territorioId }
+      });
+      if (!destacamento) {
+        return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
+      }
+    } else if (record.group.destacamentoId !== req.user.destacamentoId) {
+      return res.status(404).json({ msg: "Registro no encontrado o sin permiso" });
     }
 
     res.json(record);

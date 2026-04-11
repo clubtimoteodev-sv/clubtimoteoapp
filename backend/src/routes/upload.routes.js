@@ -18,11 +18,29 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+// ✅ SEGURIDAD P1: Solo se permiten imágenes — se rechazan ejecutables y otros tipos
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+const fileFilter = (_req, file, cb) => {
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Tipo de archivo no permitido. Solo se aceptan imágenes (jpg, png, webp, gif)."));
+  }
+};
+
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter });
 
 router.post("/", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ msg: "No file" });
   res.json({ url: `/uploads/${req.file.filename}` });
+});
+
+// Manejador de errores de multer (tipo de archivo inválido)
+router.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError || err.message?.includes("Tipo de archivo")) {
+    return res.status(400).json({ msg: err.message });
+  }
+  res.status(500).json({ msg: "Error al subir archivo" });
 });
 
 export default router;
