@@ -139,11 +139,11 @@ export default function Home() {
       <header className="sticky top-0 z-10 border-b bg-white">
         <div className="px-4 py-4">
           <div>
-            <p className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-base text-transparent">
+            <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-semibold text-transparent">
               Dashboard
             </p>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               Resumen general del club y actividad reciente
             </p>
           </div>

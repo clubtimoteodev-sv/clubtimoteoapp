@@ -216,23 +216,23 @@ export function Sidebar({
       display: "inline-flex", 
       alignItems: "center", 
       gap: "6px", 
-      backgroundColor: "#f0fdfa", /* Fondo aqua/teal muy clarito */
-      border: "1px solid #ccfbf1", /* Borde sutil para darle volumen */
+      backgroundColor: "#eff6ff",
+      border: "1px solid #bfdbfe",
       padding: "4px 10px", 
-      borderRadius: "9999px", /* Bordes totalmente redondeados estilo píldora */
+      borderRadius: "9999px",
       width: "fit-content",
       maxWidth: "100%"
     }}>
       <MapPin style={{ 
-        flexShrink: 0, /* Evita que el ícono se aplaste si el texto es muy largo */
+        flexShrink: 0,
         width: "0.85rem", 
         height: "0.85rem", 
-        color: "#0d9488" 
+        color: "#2563eb" 
       }} />
       <span style={{ 
         fontSize: "0.7rem", 
         fontWeight: 700, 
-        color: "#0d9488", 
+        color: "#1d4ed8", 
         textTransform: "uppercase", 
         letterSpacing: "0.05em", 
         whiteSpace: "nowrap", 
@@ -335,7 +335,7 @@ export function Sidebar({
               width: "2.25rem",
               height: "2.25rem",
               borderRadius: "9999px",
-              background: "linear-gradient(135deg, #0d9488, #0f766e)", // Lo cambié a tonos teal/verde para combinar
+              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

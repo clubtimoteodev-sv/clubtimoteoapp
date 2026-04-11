@@ -89,7 +89,7 @@ export default function RegionalComparison({ onBack, onViewDestacamento }: Regio
               <ArrowLeft size={20} />
             </button>
             <div>
-              <p className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-base font-bold text-transparent">
+              <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-bold text-transparent">
                 Destacamentos Pro
               </p>
               <p className="text-xs text-slate-500">
@@ -178,7 +178,7 @@ export default function RegionalComparison({ onBack, onViewDestacamento }: Regio
                     <tr key={dest.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 shrink-0 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 border border-indigo-100">
+                          <div className="h-10 w-10 shrink-0 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100">
                             <Building2 size={18} />
                           </div>
                           <div>
@@ -225,7 +225,7 @@ export default function RegionalComparison({ onBack, onViewDestacamento }: Regio
                       <td className="p-4 text-right">
                         <button
                           onClick={() => onViewDestacamento(dest.id, dest.nombre)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                         >
                           <ExternalLink size={16} />
                           <span className="hidden sm:inline">Ver Detalles</span>

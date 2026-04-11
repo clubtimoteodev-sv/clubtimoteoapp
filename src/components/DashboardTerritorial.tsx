@@ -47,102 +47,129 @@ export default function DashboardTerritorial({ user }: DashboardTerritorialProps
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
-        <Loader2 className="animate-spin text-slate-400 h-10 w-10" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-400" />
       </div>
     );
   }
 
+  const statCards = [
+    {
+      label: "Destacamentos Activos",
+      value: stats?.destacamentosActivos ?? 0,
+      icon: Church,
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
+    },
+    {
+      label: "Total Exploradores",
+      value: stats?.totalExploradores ?? 0,
+      icon: Users,
+      iconBg: "bg-green-50",
+      iconColor: "text-green-600",
+    },
+    {
+      label: "Reuniones del Mes",
+      value: stats?.reunionesMes ?? 0,
+      icon: Map,
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-500",
+    },
+    {
+      label: "Asistencia Promedio",
+      value: `${stats?.asistenciaPromedio ?? 0}%`,
+      icon: Activity,
+      iconBg: "bg-indigo-50",
+      iconColor: "text-indigo-600",
+    },
+  ];
+
   return (
-    <div style={{ padding: "1.5rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-      <header style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "1.875rem", fontWeight: "bold", color: "#111827" }}>
-          Visión Territorial
-        </h1>
-        <p style={{ color: "#4b5563", marginTop: "0.5rem" }}>
-          Bienvenido, supervisor <strong>{user?.name || "Territorial"}</strong>. Resumen de la Zona Occidente.
-        </p>
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
+      {/* Header */}
+      <header className="sticky top-0 z-10 border-b bg-white">
+        <div className="px-4 py-4">
+          <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-semibold text-transparent">
+            Visión Territorial
+          </p>
+          <p className="text-xs text-gray-500">
+            Bienvenido, supervisor{" "}
+            <span className="font-semibold text-gray-700">{user?.name || "Territorial"}</span>
+          </p>
+        </div>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {/* Card 1 */}
-        <div style={{ backgroundColor: "#ffffff", padding: "1.5rem", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ backgroundColor: "#eff6ff", padding: "1rem", borderRadius: "0.5rem", color: "#3b82f6" }}>
-            <Church size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: "500" }}>Destacamentos Activos</p>
-            <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827" }}>{stats?.destacamentosActivos || 0}</p>
-          </div>
-        </div>
-
-        {/* Card 2 */}
-        <div style={{ backgroundColor: "#ffffff", padding: "1.5rem", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ backgroundColor: "#ecfdf5", padding: "1rem", borderRadius: "0.5rem", color: "#10b981" }}>
-            <Users size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: "500" }}>Total Exploradores</p>
-            <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827" }}>{stats?.totalExploradores || 0}</p>
-          </div>
-        </div>
-
-        {/* Card 3 */}
-        <div style={{ backgroundColor: "#ffffff", padding: "1.5rem", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ backgroundColor: "#fef3c7", padding: "1rem", borderRadius: "0.5rem", color: "#f59e0b" }}>
-            <Map size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: "500" }}>Reuniones del Mes</p>
-            <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827" }}>{stats?.reunionesMes || 0}</p>
-          </div>
-        </div>
-
-        {/* Card 4 */}
-        <div style={{ backgroundColor: "#ffffff", padding: "1.5rem", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ backgroundColor: "#fee2e2", padding: "1rem", borderRadius: "0.5rem", color: "#ef4444" }}>
-            <Activity size={24} />
-          </div>
-          <div>
-            <p style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: "500" }}>Asistencia Promedio</p>
-            <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827" }}>{stats?.asistenciaPromedio || 0}%</p>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", padding: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#111827", marginBottom: "1rem" }}>Actividad Reciente en la Región</h2>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {activities.length === 0 ? (
-            <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>No hay actividad reciente.</p>
-          ) : (
-            activities.map((act) => {
-              const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
-              const daysDifference = Math.round((new Date(act.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-              const hoursDifference = Math.round((new Date(act.date).getTime() - new Date().getTime()) / (1000 * 60 * 60));
-
-              let timeAgo = "";
-              if (Math.abs(daysDifference) > 0) {
-                timeAgo = rtf.format(daysDifference, 'day');
-              } else {
-                timeAgo = rtf.format(hoursDifference, 'hour');
-              }
-
-              return (
-                <li key={act.id} style={{ display: "flex", alignItems: "center", gap: "1rem", borderBottom: "1px solid #f3f4f6", paddingBottom: "1rem" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: act.color }} />
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "0.875rem", color: "#111827", fontWeight: "500" }}>{act.action}</p>
-                    <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                      Destacamento {act.destacamento} - {timeAgo.charAt(0).toUpperCase() + timeAgo.slice(1)}
+      <main className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5">
+        {/* Stat Cards — misma estructura que Home.tsx */}
+        <section className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {statCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.label}
+                className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-gray-500">{card.label}</p>
+                    <p className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
+                      {card.value}
                     </p>
                   </div>
-                </li>
-              );
-            })
+                  <div className={`shrink-0 rounded-xl p-3 ${card.iconBg}`}>
+                    <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Actividad Reciente */}
+        <section className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Actividad Reciente en la Región
+          </h2>
+
+          {activities.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
+              No hay actividad reciente.
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {activities.map((act) => {
+                const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+                const daysDiff = Math.round(
+                  (new Date(act.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                );
+                const hoursDiff = Math.round(
+                  (new Date(act.date).getTime() - new Date().getTime()) / (1000 * 60 * 60)
+                );
+                const timeAgo =
+                  Math.abs(daysDiff) > 0
+                    ? rtf.format(daysDiff, "day")
+                    : rtf.format(hoursDiff, "hour");
+                const capitalized = timeAgo.charAt(0).toUpperCase() + timeAgo.slice(1);
+
+                return (
+                  <li key={act.id} className="flex items-start gap-4 py-3">
+                    <span
+                      className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: act.color }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900">{act.action}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {act.destacamento} · {capitalized}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </ul>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

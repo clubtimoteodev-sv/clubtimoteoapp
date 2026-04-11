@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Church, Search } from "lucide-react";
+import { ArrowLeft, Church, Search, Loader2 } from "lucide-react";
 import { apiFetch } from "../services/api";
 
 interface RegionalExplorersProps {
@@ -42,94 +42,124 @@ export default function RegionalExplorers({ onBack }: RegionalExplorersProps) {
   });
 
   return (
-    <div style={{ padding: "1.5rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-        <button
-          onClick={onBack}
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem", borderRadius: "0.5rem" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Church size={24} color="#0d9488" />
-            Exploradores de Región
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>Vista consolidada de todos los niños inscritos</p>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: "1.5rem", position: "relative", maxWidth: "400px" }}>
-        <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} size={20} />
-        <input
-          type="text"
-          placeholder="Buscar por nombre, código o iglesia..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: "100%", padding: "0.5rem 1rem 0.5rem 2.5rem",
-            borderRadius: "0.5rem", border: "1px solid #d1d5db",
-            outline: "none", fontSize: "0.875rem"
-          }}
-        />
-      </div>
-
-      {loading ? (
-        <p style={{ textAlign: "center", color: "#6b7280", padding: "2rem" }}>Cargando exploradores...</p>
-      ) : (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "0.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                <tr>
-                  <th style={{ padding: "0.75rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Código</th>
-                  <th style={{ padding: "0.75rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Nombre Completo</th>
-                  <th style={{ padding: "0.75rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Destacamento</th>
-                  <th style={{ padding: "0.75rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Edad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#6b7280" }}>
-                      No se encontraron exploradores.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((e) => {
-                    const iglesia = e.destacamento?.nombre || "Desconocida";
-                    const age = Math.floor((new Date().getTime() - new Date(e.fechaNacimiento).getTime()) / 31557600000);
-                    return (
-                      <tr key={e.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                        <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "#111827", fontWeight: 500 }}>
-                          {e.codigoInterno}
-                        </td>
-                        <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "#4b5563" }}>
-                          {e.nombre} {e.apellidos}
-                        </td>
-                        <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem" }}>
-                          <span style={{
-                            display: "inline-block", padding: "0.25rem 0.5rem",
-                            borderRadius: "9999px", fontSize: "0.75rem", fontWeight: 600,
-                            backgroundColor: stringToColor(iglesia), color: "#1f2937"
-                          }}>
-                            {iglesia}
-                          </span>
-                        </td>
-                        <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "#4b5563" }}>
-                          {age} años
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
+      {/* Header — igual que RegionalComparison */}
+      <header className="sticky top-0 z-10 border-b bg-white">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-bold text-transparent">
+                Exploradores de Región
+              </p>
+              <p className="text-xs text-slate-500">
+                Vista consolidada de todos los niños inscritos
+              </p>
+            </div>
           </div>
         </div>
-      )}
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
+        {/* Buscador */}
+        <div className="relative max-w-sm">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, código o iglesia..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm shadow-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+          />
+        </div>
+
+        {/* Tabla */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[560px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      Código
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Nombre Completo
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-1">
+                        <Church size={14} />
+                        Destacamento
+                      </span>
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Edad
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-sm text-slate-500 bg-slate-50/50">
+                        No se encontraron exploradores.
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((e) => {
+                      const iglesia = e.destacamento?.nombre || "Desconocida";
+                      const age = Math.floor(
+                        (new Date().getTime() - new Date(e.fechaNacimiento).getTime()) / 31557600000
+                      );
+                      return (
+                        <tr key={e.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="p-4 text-sm font-semibold text-blue-700">
+                            {e.codigoInterno}
+                          </td>
+                          <td className="p-4">
+                            <p className="text-sm font-medium text-gray-900">
+                              {e.nombre} {e.apellidos}
+                            </p>
+                          </td>
+                          <td className="p-4">
+                            <span
+                              className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold text-gray-800"
+                              style={{ backgroundColor: stringToColor(iglesia) }}
+                            >
+                              {iglesia}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-gray-500">
+                            {age} años
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer con conteo */}
+            {filtered.length > 0 && (
+              <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 bg-slate-50/50">
+                {filtered.length} explorador{filtered.length !== 1 ? "es" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
