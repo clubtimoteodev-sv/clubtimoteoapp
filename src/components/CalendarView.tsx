@@ -187,19 +187,19 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
     <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       {/* ── Header ────────────────────────────────────────────── */}
       <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-4 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onBack}
-              className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-2 -ml-2 shrink-0 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
             >
               <ArrowLeft size={20} />
             </button>
-            <div>
-              <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-bold text-transparent">
+            <div className="min-w-0">
+              <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-bold text-transparent truncate pr-2">
                 Calendario
               </p>
-              <p className="text-xs text-slate-500">Gestión de reuniones del club</p>
+              <p className="text-xs text-slate-500 truncate">Gestión de reuniones del club</p>
             </div>
           </div>
 
@@ -397,10 +397,13 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                 ? "border-red-200 ring-1 ring-red-50 shadow-sm"
                 : "border-gray-200";
 
+              const isDelayed = isPastDay && !hasAttendance;
+              const cardBg = isDelayed ? "bg-red-50/30" : "bg-white";
+
               return (
                 <div
                   key={meeting.id}
-                  className={`rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${cardBorder}`}
+                  className={`rounded-2xl border ${cardBg} shadow-sm transition-all hover:shadow-md ${cardBorder}`}
                 >
                   {/* Card top: tipo + badge + delete */}
                   <div className="flex items-start justify-between px-5 pt-5 pb-3">
@@ -483,7 +486,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
 
                       if (!canAct) {
                         return (
-                          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400 border border-slate-100">
+                          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400 border border-slate-100 shadow-inner">
                             Esta reunión aún no se ha realizado
                           </div>
                         );
@@ -499,13 +502,20 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                         );
                       }
 
+                      // It is 'Atrasada' if isPastDay is true but hasAttendance is false.
+                      const isDelayed = isPastDay && !hasAttendance;
+
                       return (
                         <button
                           onClick={() => onTakeAttendance(meeting.id)}
-                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
+                          className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow hover:shadow-md transition-all active:scale-95 ${
+                            isDelayed 
+                                ? "bg-red-600 hover:bg-red-700 focus:ring-red-300 ring-2 ring-transparent" 
+                                : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 ring-2 ring-transparent"
+                          }`}
                         >
-                          <Users size={18} />
-                          Tomar Asistencia
+                          {isDelayed ? <AlertCircle size={18} /> : <Users size={18} />}
+                          {isDelayed ? "Registrar Asistencia Atrasada" : "Tomar Asistencia"}
                         </button>
                       );
                     })()}

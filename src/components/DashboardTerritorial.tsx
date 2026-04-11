@@ -93,7 +93,7 @@ export default function DashboardTerritorial({ user }: DashboardTerritorialProps
             Visión Territorial
           </p>
           <p className="text-xs text-gray-500">
-            Bienvenido, supervisor{" "}
+            Bienvenido,{" "}
             <span className="font-semibold text-gray-700">{user?.name || "Territorial"}</span>
           </p>
         </div>
