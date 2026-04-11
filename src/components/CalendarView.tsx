@@ -203,10 +203,10 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
             </div>
           </div>
 
-          {!isCreating && (
+          {!isTerritorial && !isCreating && (
             <button
               onClick={() => setIsCreating(true)}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95 shrink-0"
             >
               <CalendarPlus size={18} />
               <span className="hidden sm:inline">Programar Reunión</span>
