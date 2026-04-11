@@ -468,39 +468,39 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
 
                   {/* Footer / acción */}
                   <div className="border-t border-slate-100 px-5 py-3">
-                    {/* Reuniones pasadas O de hoy SIN asistencia: siempre mostrar botón */}
-                    {canAct && !hasAttendance && !isTerritorial && (
+                    {/* LÍDER: tomar asistencia si aún no tiene y la fecha ya es hoy o pasó */}
+                    {!isTerritorial && !hasAttendance && canAct && (
                       <button
                         onClick={() => onTakeAttendance(meeting.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95 ring-2 ring-transparent focus:ring-blue-300"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
                       >
                         <Users size={18} />
                         Tomar Asistencia
                       </button>
                     )}
 
-                    {/* Territorial no puede tomar asistencia, solo ver */}
-                    {canAct && !hasAttendance && isTerritorial && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 border border-red-100">
-                        <AlertCircle size={15} />
-                        El líder aún no ha tomado asistencia
+                    {/* TERRITORIAL: no tiene permisos para tomar, solo ve advertencia si pasó el día */}
+                    {isTerritorial && !hasAttendance && canAct && (
+                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-bold text-red-600 border border-red-100">
+                        <AlertCircle size={16} />
+                        El líder aún no registra asistencia
                       </div>
                     )}
 
-                    {/* Asistencia ya tomada: botón Ver Detalles funcional */}
+                    {/* CUALQUIERA: Si ya hay asistencia registrada, ver detalles */}
                     {hasAttendance && (
                       <button
                         onClick={() => onViewAttendance(meeting.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-50 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-100 border border-green-200 transition-colors"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-50 py-3 text-sm font-bold text-green-700 hover:bg-green-100 border border-green-200 transition-colors shadow-sm"
                       >
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={18} />
                         Ver asistencia registrada
                       </button>
                     )}
 
-                    {/* Futura: no se puede hacer nada */}
-                    {isFuture && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400">
+                    {/* FUTURO: la fecha ni es hoy ni ha pasado */}
+                    {!canAct && !hasAttendance && (
+                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400 border border-slate-100">
                         Esta reunión aún no se ha realizado
                       </div>
                     )}
