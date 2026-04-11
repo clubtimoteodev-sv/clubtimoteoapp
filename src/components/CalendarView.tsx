@@ -15,7 +15,9 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 
@@ -44,9 +46,9 @@ function formatDateTimeLocal(date: Date) {
 }
 
 const formatDisplayMonth = (date: Date) => {
-  const str = date.toLocaleDateString("es-SV", { 
-    month: 'long', 
-    year: 'numeric' 
+  const str = date.toLocaleDateString("es-SV", {
+    month: "long",
+    year: "numeric",
   });
   return str.replace(/\b[a-zA-Z]/g, (l) => l.toUpperCase());
 };
@@ -56,7 +58,9 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
   const [isCreating, setIsCreating] = useState(false);
 
   const [form, setForm] = useState({
@@ -67,14 +71,18 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
   const isTerritorial = (() => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      return user?.role === "lider territorial";
-    } catch { return false; }
+      return user?.role === "lider_territorial";
+    } catch {
+      return false;
+    }
   })();
 
   const loadMeetings = async (date: Date) => {
     try {
       setLoading(true);
-      const data = await apiFetch(`/calendar/upcoming?month=${date.getMonth()}&year=${date.getFullYear()}`);
+      const data = await apiFetch(
+        `/calendar/upcoming?month=${date.getMonth()}&year=${date.getFullYear()}`
+      );
       setMeetings(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error cargando reuniones:", error);
@@ -101,9 +109,12 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
         body: JSON.stringify(form),
       });
       toast.success("Reunión creada exitosamente");
-      setForm({ date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)), type: "" });
+      setForm({
+        date: formatDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+        type: "",
+      });
       setIsCreating(false);
-      
+
       const createdDate = new Date(form.date);
       const newMonth = new Date(createdDate.getFullYear(), createdDate.getMonth(), 1);
       if (newMonth.getTime() !== selectedMonth.getTime()) {
@@ -120,9 +131,7 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
   };
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
+    if (e) e.stopPropagation();
     if (!confirm("¿Eliminar reunión?")) return;
     try {
       await apiFetch(`/calendar/meetings/${id}`, { method: "DELETE" });
@@ -150,218 +159,341 @@ export function CalendarView({ onTakeAttendance, onBack }: CalendarViewProps) {
     setSelectedMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 lg:bg-white text-slate-800 font-sans">
-      <div className="w-full max-w-[800px] mx-auto px-4 sm:px-6 pt-4 pb-2 flex justify-between items-center">
-        <button onClick={onBack} className="text-slate-500 hover:text-slate-800 transition-colors flex items-center text-sm font-medium">
-          <ArrowLeft className="h-4 w-4 mr-1.5" /> Volver
-        </button>
-        {!isTerritorial && !isCreating && (
-          <button onClick={() => setIsCreating(true)} className="text-indigo-600 hover:text-indigo-700 transition-colors flex items-center text-sm font-medium">
-            <CalendarPlus className="h-4 w-4 mr-1.5" /> Crear reunión
-          </button>
-        )}
-        {isCreating && (
-          <button onClick={() => setIsCreating(false)} className="text-slate-500 hover:text-slate-800 transition-colors text-sm font-medium">
-            Cancelar creación
-          </button>
-        )}
-      </div>
+  // Stats rápidas del mes
+  const now = new Date();
+  const completed = meetings.filter((m) => {
+    const d = new Date(m.date);
+    const past = now.getTime() > d.getTime();
+    return past && (m._count?.records ?? 0) > 0;
+  }).length;
+  const missed = meetings.filter((m) => {
+    const d = new Date(m.date);
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+    return now.getTime() > d.getTime() && !isToday && (m._count?.records ?? 0) === 0;
+  }).length;
+  const upcoming = meetings.filter((m) => new Date(m.date).getTime() > now.getTime()).length;
 
-      <main className="max-w-[800px] mx-auto px-4 sm:px-6 py-4 pb-16">
-        
-        {isCreating ? (
-          <div className="border border-slate-200 rounded-2xl p-6 sm:p-8 bg-white shadow-sm mt-4">
-            <div className="flex items-center text-[1.1rem] font-bold text-slate-800 mb-6">
-              <CalendarPlus className="h-5 w-5 mr-2.5 text-indigo-500" />
-              Programar nueva reunión
+  return (
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
+      {/* ── Header ────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-10 border-b bg-white">
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-bold text-transparent">
+                Calendario
+              </p>
+              <p className="text-xs text-slate-500">Gestión de reuniones del club</p>
             </div>
-            <form onSubmit={handleCreate} className="space-y-5">
+          </div>
+
+          {!isTerritorial && !isCreating && (
+            <button
+              onClick={() => setIsCreating(true)}
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+            >
+              <CalendarPlus size={16} />
+              <span className="hidden sm:inline">Nueva reunión</span>
+              <span className="sm:hidden">Nueva</span>
+            </button>
+          )}
+          {isCreating && (
+            <button
+              onClick={() => setIsCreating(false)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <X size={14} />
+              Cancelar
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-2xl space-y-5 px-4 py-5 pb-16">
+
+        {/* ── Formulario de creación ──────────────────────────── */}
+        {isCreating && (
+          <div className="rounded-2xl border border-blue-100 bg-white shadow-sm p-6">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="rounded-xl bg-blue-50 p-2">
+                <CalendarPlus size={18} className="text-blue-600" />
+              </div>
+              <h2 className="text-base font-bold text-slate-800">Programar nueva reunión</h2>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="meetingType" className="text-slate-700 font-medium text-sm">Tipo de reunión</Label>
+                <Label htmlFor="meetingType" className="text-sm font-semibold text-slate-700">
+                  Tipo de reunión
+                </Label>
                 <Input
                   id="meetingType"
                   type="text"
                   placeholder="Ej: Reunión General, Campamento..."
                   value={form.type}
                   onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
-                  className="rounded-lg h-11"
+                  className="h-11 rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="meetingDate" className="text-slate-700 font-medium text-sm">Fecha y hora</Label>
+                <Label htmlFor="meetingDate" className="text-sm font-semibold text-slate-700">
+                  Fecha y hora
+                </Label>
                 <Input
                   id="meetingDate"
                   type="datetime-local"
                   value={form.date}
                   onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                  className="rounded-lg h-11 w-full flex"
+                  className="h-11 w-full rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
-              <div className="flex justify-end pt-3">
-                <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-11 px-8 font-medium">
-                  <Save className="mr-2 h-4 w-4" />
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 font-semibold"
+                >
+                  <Save size={16} className="mr-2" />
                   {saving ? "Guardando..." : "Guardar reunión"}
                 </Button>
               </div>
             </form>
           </div>
-        ) : (
-          <>
-            <div className="mb-6">
-              <h1 className="flex items-center text-xl font-medium text-slate-800">
-                <CalendarIcon className="mr-2.5 h-[1.35rem] w-[1.35rem] stroke-[2]" /> Calendario de Reuniones
-              </h1>
-              <p className="text-[0.85rem] text-slate-500 mt-1">
-                Gestiona y visualiza tus reuniones programadas
+        )}
+
+        {/* ── Navegación de mes ───────────────────────────────── */}
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4">
+            <button
+              onClick={prevMonth}
+              className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            >
+              <ChevronLeft size={20} strokeWidth={2.5} />
+            </button>
+
+            <div className="text-center">
+              <p className="text-base font-bold text-slate-800 capitalize">
+                {formatDisplayMonth(selectedMonth)}
               </p>
-            </div>
-
-            <div className="border border-slate-200 rounded-xl p-4 bg-white mb-6 relative flex flex-col items-center justify-center">
-              <button onClick={prevMonth} className="absolute left-3 p-2.5 text-slate-600 hover:bg-slate-100 rounded-lg group transition-colors">
-                <ChevronLeft className="h-4 w-4 stroke-[2.5] group-hover:text-slate-900" />
-              </button>
-              
-              <div className="flex flex-col items-center">
-                 <span className="text-[0.95rem] font-medium text-slate-800 capitalize">
-                   {formatDisplayMonth(selectedMonth)}
-                 </span>
-                 <button onClick={goToCurrentMonth} className="text-[0.75rem] text-slate-500 hover:text-slate-800 mt-1 font-medium transition-colors">
-                   Ir a este mes
-                 </button>
-              </div>
-
-              <button onClick={nextMonth} className="absolute right-3 p-2.5 text-slate-600 hover:bg-slate-100 rounded-lg group transition-colors">
-                <ChevronRight className="h-4 w-4 stroke-[2.5] group-hover:text-slate-900" />
+              <button
+                onClick={goToCurrentMonth}
+                className="mt-0.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Ir a este mes
               </button>
             </div>
 
-            {loading ? (
-              <div className="border border-slate-200 rounded-xl p-12 bg-white flex flex-col items-center justify-center text-slate-400">
-                <div className="animate-spin h-6 w-6 border-2 border-slate-200 border-t-blue-600 rounded-full mb-3" />
-                <span className="text-sm font-medium">Cargando...</span>
+            <button
+              onClick={nextMonth}
+              className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            >
+              <ChevronRight size={20} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Mini stats del mes */}
+          {!loading && meetings.length > 0 && (
+            <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100">
+              <div className="px-4 py-3 text-center">
+                <p className="text-lg font-bold text-green-600">{completed}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Completadas</p>
               </div>
-            ) : meetings.length === 0 ? (
-              <div className="border border-slate-200 rounded-xl p-12 bg-white flex flex-col items-center justify-center text-slate-400 text-sm font-medium">
-                <CalendarIcon className="h-8 w-8 mb-3 opacity-50" />
-                No hay reuniones este mes
+              <div className="px-4 py-3 text-center">
+                <p className="text-lg font-bold text-blue-600">{upcoming}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Próximas</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {meetings.map((meeting) => {
-                  const dateObj = new Date(meeting.date);
-                  
-                  const longDateString = dateObj.toLocaleDateString("es-SV", { 
-                    weekday: 'long', 
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
-                  }).toLowerCase();
-                  
-                  const timeString = dateObj.toLocaleTimeString("es-SV", { 
-                    hour: "2-digit", 
-                    minute: "2-digit" 
-                  });
+              <div className="px-4 py-3 text-center">
+                <p className="text-lg font-bold text-red-500">{missed}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Sin asistencia</p>
+              </div>
+            </div>
+          )}
+        </div>
 
-                  const now = new Date();
-                  const isTimeReached = now.getTime() >= dateObj.getTime();
-                  const isToday =
-                    dateObj.getDate() === now.getDate() &&
-                    dateObj.getMonth() === now.getMonth() &&
-                    dateObj.getFullYear() === now.getFullYear();
+        {/* ── Lista de reuniones ──────────────────────────────── */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-16 text-slate-400">
+            <div className="mb-3 h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+            <span className="text-sm font-medium">Cargando reuniones...</span>
+          </div>
+        ) : meetings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-slate-400">
+            <CalendarIcon size={40} className="mb-3 opacity-40" />
+            <p className="text-sm font-semibold">No hay reuniones este mes</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {!isTerritorial ? "Crea una usando el botón de arriba" : "El líder aún no ha programado reuniones"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {meetings.map((meeting) => {
+              const dateObj = new Date(meeting.date);
 
-                  const isPast = now.getTime() > dateObj.getTime() && !isToday;
-                  const hasAttendance = (meeting._count?.records ?? 0) > 0;
-                  const missedAttendance = isPast && !hasAttendance;
+              const longDateString = dateObj
+                .toLocaleDateString("es-SV", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+                .toLowerCase();
 
-                  let badgeLabel = "";
-                  let badgeClass = "";
-                  
-                  if (missedAttendance) {
-                    badgeLabel = "Sin Asistencia";
-                    badgeClass = "bg-red-100 text-red-600 font-bold border border-red-200/50";
-                  } else if (isToday) {
-                    badgeLabel = "Hoy";
-                    badgeClass = "bg-[#dbeafe] text-[#2563eb] border border-blue-200/50";
-                  } else if (isPast && hasAttendance) {
-                    badgeLabel = "Completada";
-                    badgeClass = "bg-[#dcfce7] text-[#16a34a] border border-emerald-200/50";
-                  } else {
-                    badgeLabel = "Próxima";
-                    badgeClass = "bg-slate-100 text-slate-600 border border-slate-200/50";
-                  }
+              const timeString = dateObj.toLocaleTimeString("es-SV", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
 
-                  return (
-                    <div key={meeting.id} className={`border rounded-xl p-5 sm:p-6 bg-white sm:shadow-sm transition-all ${missedAttendance ? 'border-red-100 shadow-red-50' : 'border-slate-200'}`}>
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-[1.05rem] text-slate-800">{meeting.type}</h3>
-                          {!isTerritorial && (
-                            <button onClick={(e) => handleDelete(meeting.id, e)} className="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <span className={`px-2.5 py-[3px] rounded-full text-[0.7rem] font-semibold tracking-wide uppercase ${badgeClass}`}>
-                          {badgeLabel}
-                        </span>
+              const isToday =
+                dateObj.getDate() === now.getDate() &&
+                dateObj.getMonth() === now.getMonth() &&
+                dateObj.getFullYear() === now.getFullYear();
+
+              const isPast = now.getTime() > dateObj.getTime() && !isToday;
+              const hasAttendance = (meeting._count?.records ?? 0) > 0;
+              const missedAttendance = isPast && !hasAttendance;
+
+              // Badge config
+              type BadgeVariant = {
+                label: string;
+                className: string;
+              };
+              let badge: BadgeVariant;
+              if (missedAttendance) {
+                badge = { label: "Sin Asistencia", className: "bg-red-50 text-red-600 border border-red-200" };
+              } else if (isToday) {
+                badge = { label: "Hoy", className: "bg-blue-50 text-blue-700 border border-blue-200" };
+              } else if (isPast && hasAttendance) {
+                badge = { label: "Completada", className: "bg-green-50 text-green-700 border border-green-200" };
+              } else {
+                badge = { label: "Próxima", className: "bg-slate-100 text-slate-600 border border-slate-200" };
+              }
+
+              // Card accent
+              const cardBorder = missedAttendance
+                ? "border-red-100"
+                : isToday
+                ? "border-blue-200 ring-1 ring-blue-100"
+                : "border-gray-200";
+
+              return (
+                <div
+                  key={meeting.id}
+                  className={`rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${cardBorder}`}
+                >
+                  {/* Card top: tipo + badge + delete */}
+                  <div className="flex items-start justify-between px-5 pt-5 pb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Ícono lateral con color contextual */}
+                      <div
+                        className={`shrink-0 rounded-xl p-2 ${
+                          missedAttendance
+                            ? "bg-red-50"
+                            : isToday
+                            ? "bg-blue-50"
+                            : isPast && hasAttendance
+                            ? "bg-green-50"
+                            : "bg-slate-100"
+                        }`}
+                      >
+                        <CalendarIcon
+                          size={16}
+                          className={
+                            missedAttendance
+                              ? "text-red-500"
+                              : isToday
+                              ? "text-blue-600"
+                              : isPast && hasAttendance
+                              ? "text-green-600"
+                              : "text-slate-500"
+                          }
+                        />
                       </div>
-
-                      <div className="space-y-2 mb-4 text-[0.85rem] text-slate-500 font-medium">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 stroke-[1.5]" /> 
-                          {longDateString}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock3 className="h-4 w-4 stroke-[1.5]" /> 
-                          {timeString}
-                        </div>
-                        {meeting.destacamento?.nombre && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 stroke-[1.5]" /> 
-                            Destacamento {meeting.destacamento.nombre}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 pt-1">
-                        {missedAttendance && (
-                          <div className="bg-red-50/50 text-red-500 border border-red-100 rounded-lg p-3 text-[0.8rem] font-medium flex justify-center items-center gap-2">
-                            <AlertCircle className="h-4 w-4 fill-red-100/50" /> 
-                            La asistencia no se tomó para esta reunión
-                          </div>
-                        )}
-
-                        {!missedAttendance && isToday && !isTerritorial && (
-                          <button onClick={() => onTakeAttendance(meeting.id)} className="w-full bg-[#2563eb] hover:bg-blue-700 text-white rounded-lg py-2.5 text-[0.9rem] font-medium flex justify-center items-center gap-2 transition-colors">
-                            <Users className="h-4 w-4" /> Tomar Asistencia
-                          </button>
-                        )}
-                        
-                        {!missedAttendance && isToday && isTerritorial && (
-                           <button className="w-full border border-[#2563eb] text-[#2563eb] hover:bg-blue-50 rounded-lg py-2 text-[0.9rem] font-medium flex justify-center items-center transition-colors">
-                             Ver Detalles
-                           </button>
-                        )}
-
-                        {!missedAttendance && !isToday && !isPast && (
-                          <div className="bg-slate-100/70 text-slate-400 rounded-lg p-3 text-[0.8rem] font-medium flex justify-center items-center text-center">
-                            Esta reunión aún no se ha realizado
-                          </div>
-                        )}
-
-                        {!missedAttendance && isPast && hasAttendance && (
-                          <div className="bg-slate-100/70 text-slate-500 rounded-lg p-3 text-[0.8rem] font-medium flex justify-center items-center text-center">
-                            La asistencia para esta reunión fue registrada correctamente.
-                          </div>
-                        )}
-                      </div>
+                      <h3 className="truncate font-bold text-slate-800">{meeting.type}</h3>
+                      {!isTerritorial && (
+                        <button
+                          onClick={(e) => handleDelete(meeting.id, e)}
+                          className="shrink-0 text-slate-300 hover:text-red-500 transition-colors"
+                          title="Eliminar reunión"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+                    <span
+                      className={`ml-3 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  {/* Detalles */}
+                  <div className="space-y-1.5 px-5 pb-4 text-sm text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon size={14} className="shrink-0 text-slate-400" />
+                      <span className="capitalize">{longDateString}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock3 size={14} className="shrink-0 text-slate-400" />
+                      <span>{timeString}</span>
+                    </div>
+                    {meeting.destacamento?.nombre && (
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} className="shrink-0 text-slate-400" />
+                        <span>Destacamento {meeting.destacamento.nombre}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer / acción */}
+                  <div className="border-t border-slate-100 px-5 py-3">
+                    {missedAttendance && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-500">
+                        <AlertCircle size={15} />
+                        La asistencia no se tomó para esta reunión
+                      </div>
+                    )}
+
+                    {!missedAttendance && isToday && !isTerritorial && (
+                      <button
+                        onClick={() => onTakeAttendance(meeting.id)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                      >
+                        <Users size={16} />
+                        Tomar Asistencia
+                      </button>
+                    )}
+
+                    {!missedAttendance && isToday && isTerritorial && (
+                      <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors">
+                        Ver Detalles
+                      </button>
+                    )}
+
+                    {!missedAttendance && !isToday && !isPast && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-400">
+                        Esta reunión aún no se ha realizado
+                      </div>
+                    )}
+
+                    {!missedAttendance && isPast && hasAttendance && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-green-50 py-2.5 text-sm font-medium text-green-600">
+                        <CheckCircle2 size={15} />
+                        Asistencia registrada correctamente
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </main>
     </div>
