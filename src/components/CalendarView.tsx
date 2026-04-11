@@ -206,10 +206,10 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
           {!isTerritorial && !isCreating && (
             <button
               onClick={() => setIsCreating(true)}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
             >
-              <CalendarPlus size={16} />
-              <span className="hidden sm:inline">Nueva reunión</span>
+              <CalendarPlus size={18} />
+              <span className="hidden sm:inline">Programar Reunión</span>
               <span className="sm:hidden">Nueva</span>
             </button>
           )}
@@ -318,8 +318,8 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                 <p className="text-xs text-slate-500 mt-0.5">Próximas</p>
               </div>
               <div className="px-4 py-3 text-center">
-                <p className="text-lg font-bold text-amber-500">{pending}</p>
-                <p className="text-xs text-slate-500 mt-0.5">Pendientes</p>
+                <p className="text-lg font-bold text-red-500">{pending}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Sin asistencia</p>
               </div>
             </div>
           )}
@@ -384,7 +384,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
               } else if (isToday) {
                 badge = { label: "Hoy", className: "bg-blue-50 text-blue-700 border border-blue-200" };
               } else if (isPastDay) {
-                badge = { label: "Pendiente", className: "bg-amber-50 text-amber-700 border border-amber-200" };
+                badge = { label: "Atrasada", className: "bg-red-50 text-red-600 border border-red-200 font-bold" };
               } else {
                 badge = { label: "Próxima", className: "bg-slate-100 text-slate-600 border border-slate-200" };
               }
@@ -394,7 +394,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                 : isToday
                 ? "border-blue-200 ring-1 ring-blue-100"
                 : isPastDay
-                ? "border-amber-100"
+                ? "border-red-200 ring-1 ring-red-50 shadow-sm"
                 : "border-gray-200";
 
               return (
@@ -413,7 +413,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                             : isToday
                             ? "bg-blue-50"
                             : isPastDay
-                            ? "bg-amber-50"
+                            ? "bg-red-50"
                             : "bg-slate-100"
                         }`}
                       >
@@ -425,7 +425,7 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                               : isToday
                               ? "text-blue-600"
                               : isPastDay
-                              ? "text-amber-500"
+                              ? "text-red-500"
                               : "text-slate-500"
                           }
                         />
@@ -472,16 +472,16 @@ export function CalendarView({ onTakeAttendance, onViewAttendance, onBack }: Cal
                     {canAct && !hasAttendance && !isTerritorial && (
                       <button
                         onClick={() => onTakeAttendance(meeting.id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 hover:shadow-md transition-all active:scale-95 ring-2 ring-transparent focus:ring-blue-300"
                       >
-                        <Users size={16} />
+                        <Users size={18} />
                         Tomar Asistencia
                       </button>
                     )}
 
                     {/* Territorial no puede tomar asistencia, solo ver */}
                     {canAct && !hasAttendance && isTerritorial && (
-                      <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-50 py-2.5 text-sm font-medium text-amber-600">
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 border border-red-100">
                         <AlertCircle size={15} />
                         El líder aún no ha tomado asistencia
                       </div>
