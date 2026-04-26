@@ -42,7 +42,8 @@ import {
   Search,
   Eye,
 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
+import { ExportManager } from "./ExportManager";
 
 type MovementType = "entrada" | "salida";
 
@@ -95,6 +96,25 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const [newMovement, setNewMovement] = useState(initialForm);
+
+  const isReadOnly = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role === "lider_territorial"; }
+    catch { return false; }
+  })();
+
+  const territorialOverride = localStorage.getItem("overrideDestacamentoName");
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}"); }
+    catch { return {}; }
+  })();
+
+  const globalName = storedUser.territorioNombre ? `Territorio ${storedUser.territorioNombre}` : "Destacamento";
+
+  const outpostInfo = {
+    name: territorialOverride || storedUser?.destacamento?.name || storedUser.destacamentoNombre || globalName,
+    city: storedUser?.destacamento?.city || "", 
+    leader: storedUser.name || "Líder",
+  };
 
   useEffect(() => {
     loadMovements();
@@ -259,7 +279,8 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:4000/api/upload", {
+    const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+    const res = await fetch(`${API}/upload`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: formData,
@@ -403,15 +424,39 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
               </div>
             </div>
 
-            <DialogTrigger asChild>
-              <Button
-                className="bg-gradient-to-r from-emerald-600 to-teal-600"
-                onClick={openCreateDialog}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo
-              </Button>
-            </DialogTrigger>
+            <div className="flex items-center gap-2">
+              <ExportManager
+                data={filteredMovements.map((m) => ({
+                  ...m,
+                  formattedAmount: new Intl.NumberFormat("es-SV", { style: "currency", currency: "USD" }).format(m.amount),
+                  formattedDate: new Date(m.date).toLocaleDateString("es-SV", { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                  typeLabel: m.type === "entrada" ? "Entrada" : "Salida",
+                }))}
+                availableColumns={[
+                  { key: "typeLabel", label: "Tipo" },
+                  { key: "formattedAmount", label: "Monto" },
+                  { key: "category", label: "Categoría" },
+                  { key: "description", label: "Descripción" },
+                  { key: "recipient", label: "Origen/Destino" },
+                  { key: "formattedDate", label: "Fecha" }
+                ]}
+                filename="Reporte_Financiero"
+                reportTitle="Reporte de Movimientos Financieros"
+                outpostInfo={outpostInfo}
+              />
+
+              {!isReadOnly && (
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600"
+                    onClick={openCreateDialog}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nuevo
+                  </Button>
+                </DialogTrigger>
+              )}
+            </div>
           </div>
         </header>
         )}
@@ -427,16 +472,40 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
               <ArrowLeft style={{ width: "0.9rem", height: "0.9rem" }} />
               Volver
             </button>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                onClick={openCreateDialog}
-                style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "linear-gradient(to right, #059669, #0d9488)", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
-              >
-                <Plus style={{ width: "0.9rem", height: "0.9rem" }} />
-                Nuevo
-              </button>
-            </DialogTrigger>
+            <div className="flex items-center gap-2">
+              <ExportManager
+                data={filteredMovements.map((m) => ({
+                  ...m,
+                  formattedAmount: new Intl.NumberFormat("es-SV", { style: "currency", currency: "USD" }).format(m.amount),
+                  formattedDate: new Date(m.date).toLocaleDateString("es-SV", { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                  typeLabel: m.type === "entrada" ? "Entrada" : "Salida",
+                }))}
+                availableColumns={[
+                  { key: "typeLabel", label: "Tipo" },
+                  { key: "formattedAmount", label: "Monto" },
+                  { key: "category", label: "Categoría" },
+                  { key: "description", label: "Descripción" },
+                  { key: "recipient", label: "Origen/Destino" },
+                  { key: "formattedDate", label: "Fecha" }
+                ]}
+                filename="Reporte_Financiero"
+                reportTitle="Reporte de Movimientos Financieros"
+                outpostInfo={outpostInfo}
+              />
+
+              {!isReadOnly && (
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={openCreateDialog}
+                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 0.9rem", borderRadius: "0.5rem", border: "none", background: "linear-gradient(to right, #059669, #0d9488)", color: "white", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
+                  >
+                    <Plus style={{ width: "0.9rem", height: "0.9rem" }} />
+                    Nuevo
+                  </button>
+                </DialogTrigger>
+              )}
+            </div>
           </div>
         )}
 
@@ -823,10 +892,12 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                 <p className="text-sm text-muted-foreground mb-3">
                   Aún no hay movimientos para mostrar
                 </p>
-                <Button variant="outline" onClick={openCreateDialog}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar movimiento
-                </Button>
+                {!isReadOnly && (
+                  <Button variant="outline" onClick={openCreateDialog}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar movimiento
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="divide-y">
@@ -897,21 +968,25 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                         </p>
 
                         <div className="flex items-center justify-end gap-1 mt-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(movement)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
+                          {!isReadOnly && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditDialog(movement)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteId(movement.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteId(movement.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

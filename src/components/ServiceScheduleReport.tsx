@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface ServiceScheduleReportProps {
   onBack: () => void;

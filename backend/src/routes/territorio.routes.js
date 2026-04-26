@@ -184,7 +184,7 @@ router.get("/comparativa", async (req, res) => {
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    const twentyDaysAgo = new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000);
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const destacamentos = await prisma.destacamento.findMany({
@@ -236,9 +236,9 @@ router.get("/comparativa", async (req, res) => {
       const balanceMes = income - expenses;
       const nuevosExploradoresMes = d.explorers.length;
 
-      // Activo = tuvo al menos una reunión CON asistencia tomada en los últimos 10 días
+      // Activo = tuvo al menos una reunión CON asistencia tomada en los últimos 20 días
       const recentMeetings = d.meetings.filter(
-        m => new Date(m.date) >= tenDaysAgo
+        m => new Date(m.date) >= twentyDaysAgo
              && new Date(m.date) <= now
              && m.records.length > 0
       );
@@ -270,11 +270,20 @@ router.get("/reporte-detallado", async (req, res) => {
     const territorioId = req.user.territorioId;
     if (!territorioId) return res.status(400).json({ msg: "Sin territorio" });
 
-    // Cargar destacamentos y calcular exploradores
+    const now = new Date();
+    const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+    const month = req.query.month !== undefined ? parseInt(req.query.month) : now.getMonth();
+    
+    // Ultimo dia del mes seleccionado
+    const targetDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    // Cargar destacamentos y sus exploradores (creados hasta el targetDate)
     const destacamentos = await prisma.destacamento.findMany({
       where: { territorioId },
       include: {
-        explorers: true
+        explorers: {
+          where: { createdAt: { lte: targetDate } }
+        }
       }
     });
 
@@ -284,10 +293,8 @@ router.get("/reporte-detallado", async (req, res) => {
 
     const crecimiento = [];
 
-    const now = new Date();
-
     const calculateAge = (dob) => {
-      const diff_ms = Date.now() - new Date(dob).getTime();
+      const diff_ms = targetDate.getTime() - new Date(dob).getTime();
       const age_dt = new Date(diff_ms); 
       return Math.abs(age_dt.getUTCFullYear() - 1970);
     };
@@ -299,7 +306,7 @@ router.get("/reporte-detallado", async (req, res) => {
       
       d.explorers.forEach(ext => {
         const edad = calculateAge(ext.fechaNacimiento);
-        if (edad >= 4 && edad <= 10) {
+        if (edad <= 10) {
           demiAmiguitos++;
           d_amiguitos++;
         } else if (edad >= 11 && edad <= 15) {
@@ -329,12 +336,12 @@ router.get("/reporte-detallado", async (req, res) => {
       { name: "Servicio Cristiano", value: demiServicio, fill: "#FF0000" }
     ];
 
-    // Asistencia de los ultimos 6 meses para que el grafico se vea con mas historia (aprox) si la hay.
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    // Asistencia de los ultimos 6 meses limitados a este periodo
+    const sixMonthsAgo = new Date(year, month - 5, 1);
     const meetings = await prisma.meeting.findMany({
       where: {
         destacamento: { territorioId },
-        date: { gte: sixMonthsAgo, lte: now }
+        date: { gte: sixMonthsAgo, lte: targetDate }
       },
       include: {
         records: true
@@ -368,6 +375,7 @@ router.get("/reporte-detallado", async (req, res) => {
     });
 
     res.json({
+      totalDestacamentos: destacamentos.length,
       demografia,
       crecimiento: topCrecimiento,
       asistenciaTrend

@@ -94,13 +94,40 @@ router.post("/login", loginLimiter, async (req, res) => {
   });
   if (!user) return res.status(401).json({ msg: "Credenciales inválidas" });
 
+  if (user.isLocked) {
+    return res.status(403).json({ msg: "Usuario bloqueado por seguridad. Contacte a un administrador." });
+  }
+
   const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(401).json({ msg: "Credenciales inválidas" });
+  if (!ok) {
+    const attempts = user.failedLoginAttempts + 1;
+    if (attempts >= 3) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: attempts, isLocked: true }
+      });
+      return res.status(403).json({ msg: "Usuario bloqueado por demasiados intentos fallidos. Contacte a un administrador." });
+    } else {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: attempts }
+      });
+      return res.status(401).json({ msg: `Credenciales inválidas. Te quedan ${3 - attempts} intentos.` });
+    }
+  }
+
+  if (user.failedLoginAttempts > 0) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0 }
+    });
+  }
 
   // Inyectamos el destacamentoId en el token
   const token = jwt.sign(
     { 
       sub: user.id, 
+      name: user.name,
       role: user.role,
       destacamentoId: user.destacamentoId,
       territorioId: user.territorioId
@@ -122,6 +149,7 @@ router.post("/login", loginLimiter, async (req, res) => {
       destacamentoCiudad: user.destacamento?.ciudad || null,
       destacamentoIglesia: user.destacamento?.iglesia || null,
       encargado: user.destacamento?.encargado || null,
+      territorioNombre: user.territorio?.nombre || null,
     }
   });
 });

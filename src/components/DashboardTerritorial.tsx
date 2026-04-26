@@ -87,21 +87,22 @@ export default function DashboardTerritorial({ user }: DashboardTerritorialProps
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="px-4 py-4">
-          <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-semibold text-transparent">
-            Visión Territorial
-          </p>
-          <p className="text-xs text-gray-500">
-            Bienvenido,{" "}
-            <span className="font-semibold text-gray-700">{user?.name || "Territorial"}</span>
-          </p>
+      <header className="sticky top-0 z-10 border-b bg-white border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-3 sm:px-6 shrink-0">
+          <div>
+            <p className="font-bold text-[1rem] text-slate-800">
+              Dashboard Territorial
+            </p>
+            <p className="text-[0.75rem] text-slate-500 mt-[1px]">
+              Bienvenido, {user?.name || "Territorial"}
+            </p>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5">
         {/* Stat Cards — misma estructura que Home.tsx */}
-        <section className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-4">
           {statCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -153,13 +154,14 @@ export default function DashboardTerritorial({ user }: DashboardTerritorialProps
 
                 return (
                   <li key={act.id} className="flex items-start gap-4 py-3">
-                    <span
-                      className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: act.color }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900">{act.action}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                    <div 
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-500"
+                    >
+                      <Activity size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                      <p className="text-sm font-bold text-slate-800">{act.action}</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">
                         {act.destacamento} · {capitalized}
                       </p>
                     </div>

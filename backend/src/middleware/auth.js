@@ -4,12 +4,8 @@ import { mustEnv } from "../utils/env.js";
 const JWT_SECRET = mustEnv("JWT_SECRET");
 
 export function auth(req, res, next) {
-  // AGREGA ESTA LÍNEA:
-  console.log("--> Petición interceptada en middleware hacia:", req.originalUrl);
-
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    console.log("--> Error: No hay token"); // Y ESTA
     return res.status(401).json({ msg: "No token" });
   }
 
@@ -24,8 +20,9 @@ export function auth(req, res, next) {
     // AGREGADO: Construimos req.user para el sistema multi-iglesia
     req.user = {
       id: payload.sub || payload.id,
+      name: payload.name || "Usuario",
       role: payload.role,
-      destacamentoId: payload.destacamentoId, // Esto es lo que usa el controlador de exploradores
+      destacamentoId: payload.destacamentoId,
       territorioId: payload.territorioId
     };
 

@@ -1,25 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Eye, X } from "lucide-react";
 
 import { Sidebar } from "./components/Sidebar";
 import { MobileHeader } from "./components/MobileHeader";
 import { Login } from "./components/Login";
 import Home from "./components/Home";
-import { CalendarView } from "./components/CalendarView";
-import RegionalExplorers from "./components/RegionalExplorers";
-import RegionalComparison from "./components/RegionalComparison";
-import { PersonalDataForm } from "./components/PersonalDataForm";
-import { ExplorersList } from "./components/ExplorersList";
-import { ExplorerDetail } from "./components/ExplorerDetail";
-import { AttendanceTaking } from "./components/AttendanceTaking";
-import { AttendanceReport } from "./components/AttendanceReport";
-import { FinanceManager } from "./components/FinanceManager";
-import { ServiceGroups } from "./components/ServiceGroups";
-import { ServiceScheduleCreation } from "./components/ServiceScheduleCreation";
-import { ServiceScheduleAttendance } from "./components/ServiceScheduleAttendance";
-import { ServiceScheduleReport } from "./components/ServiceScheduleReport";
-import DashboardTerritorial from "./components/DashboardTerritorial";
-import RegionalReport from "./components/RegionalReport";
+
+// Code splitting: Carga diferida de módulos pesados
+const CalendarView = lazy(() => import("./components/CalendarView").then(m => ({ default: m.CalendarView })));
+const RegionalExplorers = lazy(() => import("./components/RegionalExplorers"));
+const RegionalComparison = lazy(() => import("./components/RegionalComparison"));
+const PersonalDataForm = lazy(() => import("./components/PersonalDataForm").then(m => ({ default: m.PersonalDataForm })));
+const ExplorersList = lazy(() => import("./components/ExplorersList").then(m => ({ default: m.ExplorersList })));
+const ExplorerDetail = lazy(() => import("./components/ExplorerDetail").then(m => ({ default: m.ExplorerDetail })));
+const AttendanceTaking = lazy(() => import("./components/AttendanceTaking").then(m => ({ default: m.AttendanceTaking })));
+const AttendanceReport = lazy(() => import("./components/AttendanceReport").then(m => ({ default: m.AttendanceReport })));
+const FinanceManager = lazy(() => import("./components/FinanceManager").then(m => ({ default: m.FinanceManager })));
+const ServiceGroups = lazy(() => import("./components/ServiceGroups").then(m => ({ default: m.ServiceGroups })));
+const ServiceScheduleCreation = lazy(() => import("./components/ServiceScheduleCreation").then(m => ({ default: m.ServiceScheduleCreation })));
+const ServiceScheduleAttendance = lazy(() => import("./components/ServiceScheduleAttendance").then(m => ({ default: m.ServiceScheduleAttendance })));
+const ServiceScheduleReport = lazy(() => import("./components/ServiceScheduleReport").then(m => ({ default: m.ServiceScheduleReport })));
+const DashboardTerritorial = lazy(() => import("./components/DashboardTerritorial"));
+const RegionalReport = lazy(() => import("./components/RegionalReport"));
+
+const LoadingFallback = () => (
+  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", minHeight: "400px" }}>
+    <div style={{ padding: "1.5rem", borderRadius: "1rem", background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+      <div style={{ width: "2.5rem", height: "2.5rem", border: "4px solid #e0e7ff", borderTopColor: "#4f46e5", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <span style={{ color: "#4b5563", fontWeight: 500 }}>Cargando módulo...</span>
+    </div>
+  </div>
+);
 
 type AttendanceReportSource = "menu" | "explorer-detail";
 
@@ -55,7 +67,7 @@ export default function App() {
   const [attendanceReportSource, setAttendanceReportSource] =
     useState<AttendanceReportSource>("menu");
 
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string; destacamentoNombre?: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string; destacamentoNombre?: string; territorioNombre?: string } | null>(() => {
     try {
       const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
@@ -82,6 +94,7 @@ export default function App() {
 
   const exitDrillDown = () => {
     localStorage.removeItem("overrideDestacamentoId");
+    localStorage.removeItem("overrideDestacamentoName");
     setDrilledName("");
     if (currentUser?.role === "lider_territorial") {
       setActiveSection("territorial-home");
@@ -93,6 +106,7 @@ export default function App() {
   const handleLogin = (_token: string) => {
     setIsAuthenticated(true);
     localStorage.removeItem("overrideDestacamentoId");
+    localStorage.removeItem("overrideDestacamentoName");
     setDrilledName("");
     try {
       const raw = localStorage.getItem("user");
@@ -112,6 +126,7 @@ export default function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("overrideDestacamentoId");
+    localStorage.removeItem("overrideDestacamentoName");
     setCurrentUser(null);
     setIsAuthenticated(false);
     setActiveSection("login");
@@ -127,6 +142,7 @@ export default function App() {
     if (section.startsWith("view-destacamento:")) {
       const [, id, nombre] = section.split(":");
       localStorage.setItem("overrideDestacamentoId", id);
+      localStorage.setItem("overrideDestacamentoName", nombre);
       setDrilledName(nombre);
       setActiveSection("view-destacamento");
       setIsSidebarOpen(false);
@@ -135,6 +151,7 @@ export default function App() {
 
     if (section === "territorial-home") {
       localStorage.removeItem("overrideDestacamentoId");
+      localStorage.removeItem("overrideDestacamentoName");
       setDrilledName("");
     }
 
@@ -177,7 +194,7 @@ export default function App() {
       "view-destacamento": "Dashboard de Iglesia",
       "territorial-home": "Dashboard Territorial",
       "regional-report": "Reporte Regional",
-      "regional-comparison": "Destacamentos Pro",
+      "regional-comparison": "Destacamentos ",
       "regional-attendance": "Asistencia Territorial",
       "churches-list": "Exporadores de Región",
       calendar: "Calendario",
@@ -369,6 +386,7 @@ export default function App() {
         userEmail={currentUser?.email}
         userRole={currentUser?.role}
         destacamentoName={currentUser?.destacamentoNombre}
+        territorioName={currentUser?.territorioNombre}
       />
 
       <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, overflow: "hidden" }}>
@@ -379,21 +397,70 @@ export default function App() {
 
         <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
           {drilledName && (
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-orange-50 border-b border-orange-200 px-4 py-3 shrink-0">
-              <span className="text-orange-700 text-sm font-semibold flex items-center gap-2 w-full sm:w-auto overflow-hidden">
-                <Eye size={18} className="shrink-0" />
-                <span className="truncate">Modo Supervisor: <strong>{drilledName}</strong></span>
+            <div 
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 30,
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "0.75rem",
+                padding: "1rem 1.25rem",
+                background: "linear-gradient(to right, #4c1d95, #4338ca)",
+                color: "white",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                flexShrink: 0,
+                flexWrap: "wrap"
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.1rem", fontWeight: 700, minWidth: 0, flex: 1 }}>
+                <Eye size={22} style={{ color: "#c7d2fe", flexShrink: 0 }} />
+                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  Modo Líder Territorial <span style={{ opacity: 0.75, fontWeight: 500, margin: "0 0.25rem" }}>|</span> <strong>{drilledName}</strong>
+                </span>
+                <span style={{
+                  display: "inline-block",
+                  marginLeft: "0.5rem",
+                  fontSize: "0.65rem",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  padding: "0.125rem 0.5rem",
+                  borderRadius: "9999px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  whiteSpace: "nowrap"
+                }}>
+                  Solo lectura
+                </span>
               </span>
               <button 
                 onClick={exitDrillDown} 
-                className="w-full sm:w-auto bg-white border border-orange-200 text-orange-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1 transition-colors hover:bg-orange-100 shrink-0 shadow-sm"
+                style={{
+                  backgroundColor: "white",
+                  color: "#4338ca",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  cursor: "pointer",
+                  border: "none",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                  whiteSpace: "nowrap"
+                }}
               >
-                <X size={14} /> Salir del Modo
+                <X size={16} /> Salir del modo territorial
               </button>
             </div>
           )}
           <div style={{ flex: 1 }}>
-            {renderContent()}
+            <Suspense fallback={<LoadingFallback />}>
+              {renderContent()}
+            </Suspense>
           </div>
         </main>
       </div>

@@ -24,6 +24,7 @@ export interface OutpostInfo {
   name: string;
   city: string;
   leader: string;
+  totalDestacamentos?: number;
 }
 
 export interface ExportManagerProps<T extends Record<string, unknown>> {
@@ -107,17 +108,25 @@ export function ExportManager<T extends Record<string, unknown>>({
   };
 
   const activeCols = availableColumns.filter((c) => selectedKeys.has(c.key));
-  const outpostLine = [outpostInfo.name, outpostInfo.city].filter(Boolean).join("  ·  ");
+  const formattedName = outpostInfo.name === "Destacamento" || outpostInfo.name?.startsWith("Territorio") ? outpostInfo.name : `Destacamento: ${outpostInfo.name}`;
+  const outpostLine = [formattedName, outpostInfo.city].filter(Boolean).join("  ·  ");
 
   // ── Excel ────────────────────────────────────────────────────────────────────
   const handleExportExcel = () => {
     const wb = xlsx.utils.book_new();
     const dateStr = new Date().toLocaleDateString("es-ES");
-    const rows: (string | number)[][] = [
+    const headerRows: (string | number)[][] = [
       [reportTitle],
-      [outpostInfo.name, "", outpostInfo.city],
-      [`Líder: ${outpostInfo.leader}`, "", `Generado: ${dateStr}`],
-      [],
+      [formattedName, "", outpostInfo.city],
+      [`Generado: ${dateStr}`]
+    ];
+    if (outpostInfo.totalDestacamentos !== undefined) {
+      headerRows.push([`Total Destacamentos Evaluados: ${outpostInfo.totalDestacamentos}`]);
+    }
+    headerRows.push([]);
+
+    const rows: (string | number)[][] = [
+      ...headerRows,
       activeCols.map((c) => c.label),
       ...data.map((row) => activeCols.map((c) => getCellValue(row, c.key))),
     ];
@@ -147,7 +156,9 @@ export function ExportManager<T extends Record<string, unknown>>({
     doc.setFontSize(9);
     doc.setTextColor(204, 251, 241);
     if (outpostLine) doc.text(outpostLine, M, 23);
-    doc.text(`Líder: ${outpostInfo.leader}`, M, 31);
+    if (outpostInfo.totalDestacamentos !== undefined) {
+      doc.text(`Destacamentos: ${outpostInfo.totalDestacamentos}`, W / 2, 31, { align: "center" });
+    }
     const dateStr = new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
     doc.text(dateStr, W - M, 31, { align: "right" });
 
@@ -204,7 +215,7 @@ export function ExportManager<T extends Record<string, unknown>>({
             <div style={{ marginTop: 12, borderRadius: 10, border: "1px solid #99f6e4", background: "linear-gradient(135deg, #f0fdfa, #ecfdf5)", padding: "10px 14px" }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#134e4a", marginBottom: 2 }}>{reportTitle}</p>
               {outpostLine && <p style={{ fontSize: 12, color: "#0f766e" }}>{outpostLine}</p>}
-              {outpostInfo.leader && <p style={{ fontSize: 11, color: "#14b8a6" }}>Líder: {outpostInfo.leader}</p>}
+              {outpostInfo.totalDestacamentos !== undefined && <p style={{ fontSize: 11, color: "#14b8a6" }}>Destacamentos: {outpostInfo.totalDestacamentos}</p>}
             </div>
           </div>
 

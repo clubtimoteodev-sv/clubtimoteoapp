@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { ArrowLeft, Upload, User, FileText, Phone, Church, Shield, Save, X } from "lucide-react";
+import { apiFetch } from "../services/api";
+import { toast } from "sonner";
 
 interface PersonalDataFormProps {
   onBack: () => void;
@@ -244,7 +246,8 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
   const uploadFile = async (file: File, token: string) => {
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("https://x-production-e359.up.railway.app/api/upload", {
+    const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+    const res = await fetch(`${API}/upload`, {
       method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd,
     });
     const data = await res.json().catch(() => null);
@@ -278,20 +281,19 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
         nombreLiderCelula: formData.asisteCelula === "si" ? formData.nombreLiderCelula || null : null,
         fotoUrl, recetaUrl, permisoUrl,
       };
-      const res = await fetch("https://x-production-e359.up.railway.app/api/explorers", {
+      
+      await apiFetch("/explorers", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) { alert(data?.msg || data?.error || "Error al guardar explorador"); return; }
-      alert("Explorador guardado correctamente");
+      
+      toast.success("Explorador guardado correctamente");
       setFormData({ codigoExplorador: "", nombre: "", apellidos: "", fechaNacimiento: "", direccion: "", telefono: "", alergias: "", medicinaControlada: "", estudia: "", nivelEducativo: "", nombreResponsable: "", telefonoResponsable: "", aceptoCristo: "", bautizado: "", asisteCelula: "", nombreLiderCelula: "" });
       setPhotoFile(null); setRecetaFile(null); setPermisoFile(null);
       setPhotoPreview(null); setRecetaPreview(null); setPermisoPreview(null);
       onBack();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Error de conexión con el servidor");
+      toast.error(error instanceof Error ? error.message : "Error de conexión con el servidor");
     } finally { setLoading(false); }
   };
 

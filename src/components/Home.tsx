@@ -61,6 +61,17 @@ function formatDate(date: string) {
   });
 }
 
+function formatDateTime(date: string) {
+  return new Date(date).toLocaleString("es-SV", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function getInitials(nombre: string, apellidos: string) {
   return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
 }
@@ -135,15 +146,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      <header className="sticky top-0 z-10 border-b bg-white">
-        <div className="px-4 py-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      <header className="sticky top-0 z-10 border-b bg-white border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-3 sm:px-6 shrink-0">
           <div>
-            <p className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-base font-semibold text-transparent">
+            <p className="font-bold text-[1rem] text-slate-800">
               Dashboard
             </p>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-[0.75rem] text-slate-500 mt-[1px]">
               Resumen general del club y actividad reciente
             </p>
           </div>
@@ -151,70 +162,58 @@ export default function Home() {
       </header>
 
       <main className="w-full overflow-x-hidden space-y-5 px-3 py-4 pb-safe sm:px-4 sm:py-5">
-        <section className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-gray-500">Exploradores registrados</p>
-                <p className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
-                  {loading ? "..." : summary.explorersCount}
-                </p>
-              </div>
+      {/* Cambiamos a grid-cols-3 desde el breakpoint 'sm' (640px) o 'md' (768px) */}
+<section className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-3">
+  
+  {/* Card 1: Exploradores */}
+  <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-gray-500 uppercase tracking-wider">Exploradores</p>
+        <p className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">
+          {loading ? "..." : summary.explorersCount}
+        </p>
+      </div>
+      <div className="shrink-0 rounded-xl bg-blue-50 p-3">
+        <Users className="h-5 w-5 text-blue-600" />
+      </div>
+    </div>
+  </div>
 
-              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
-                <Users className="h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-          </div>
+  {/* Card 2: Asistencia */}
+  <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-gray-500 uppercase tracking-wider">Asistencia</p>
+        <p className={`mt-1 text-xl font-bold sm:text-2xl ${
+          summary.monthlyAttendanceAverage >= 80 ? "text-green-600" : summary.monthlyAttendanceAverage >= 50 ? "text-yellow-600" : "text-red-600"
+        }`}>
+          {loading ? "..." : `${summary.monthlyAttendanceAverage}%`}
+        </p>
+      </div>
+      <div className="shrink-0 rounded-xl bg-gray-50 p-3">
+        <CheckCircle2 className="h-5 w-5 text-gray-500" />
+      </div>
+    </div>
+  </div>
 
-          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-gray-500">Asistencia promedio mensual</p>
-
-                <p
-                  className={`mt-2 text-2xl font-semibold sm:text-3xl ${
-                    summary.monthlyAttendanceAverage >= 80
-                      ? "text-green-600"
-                      : summary.monthlyAttendanceAverage >= 50
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                  }`}
-                >
-                  {loading ? "..." : `${summary.monthlyAttendanceAverage}%`}
-                </p>
-              </div>
-
-              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
-                <CheckCircle2 className="h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6 md:col-span-2 xl:col-span-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-gray-500">Balance financiero</p>
-
-                <p
-                  className={`mt-2 text-2xl font-semibold sm:text-3xl ${
-                    summary.balance > 0
-                      ? "text-green-600"
-                      : summary.balance < 0
-                        ? "text-red-600"
-                        : "text-gray-700"
-                  }`}
-                >
-                  {loading ? "..." : formatMoney(summary.balance)}
-                </p>
-              </div>
-
-              <div className="shrink-0 rounded-xl bg-gray-100 p-3">
-                <Wallet className="h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-          </div>
-        </section>
+  {/* Card 3: Balance - Eliminamos el col-span-2 para que se alinee */}
+  <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</p>
+        <p className={`mt-1 text-xl font-bold sm:text-2xl ${
+          summary.balance > 0 ? "text-green-600" : summary.balance < 0 ? "text-red-600" : "text-gray-700"
+        }`}>
+          {loading ? "..." : formatMoney(summary.balance)}
+        </p>
+      </div>
+      <div className="shrink-0 rounded-xl bg-green-50 p-3">
+        <Wallet className="h-5 w-5 text-green-600" />
+      </div>
+    </div>
+  </div>
+</section>
 
         <section className="grid w-full min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
           <div className="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
@@ -241,7 +240,7 @@ export default function Home() {
                         <div className="min-w-0">
                           <p className="truncate font-medium text-gray-900">{meeting.type}</p>
                           <p className="mt-1 text-sm text-gray-500">
-                            {formatDate(meeting.date)}
+                            {formatDateTime(meeting.date)}
                           </p>
                         </div>
 
@@ -319,11 +318,11 @@ export default function Home() {
                       {summary.lastMeetingSummary.type}
                     </p>
                     <p className="mt-1 text-sm text-gray-500">
-                      {formatDate(summary.lastMeetingSummary.date)}
+                      {formatDateTime(summary.lastMeetingSummary.date)}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div className="rounded-xl border border-gray-200 px-4 py-4">
                       <p className="text-sm text-gray-500">Presentes</p>
                       <p className="mt-1 text-2xl font-semibold text-green-600">

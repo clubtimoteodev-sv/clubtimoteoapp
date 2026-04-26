@@ -1,4 +1,11 @@
-const API = "http://localhost:4000/api";
+const API = import.meta.env.VITE_API_URL;
+
+if (!API) {
+  console.error(
+    "[ClubTimoteo] ❌ VITE_API_URL no está definida. " +
+    "Crea un archivo .env en la raíz con: VITE_API_URL=http://localhost:4000/api"
+  );
+}
 
 export function getToken() {
   return localStorage.getItem("token");

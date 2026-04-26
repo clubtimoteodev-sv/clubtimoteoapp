@@ -3,6 +3,8 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
@@ -19,19 +21,35 @@ dotenv.config();
 
 const app = express();
 
+// Seguridad: headers HTTP seguros
+app.use(helmet());
+
+// Rate limit global — 300 requests por IP cada 15 minutos
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: "Demasiadas solicitudes. Intenta de nuevo en 15 minutos." }
+});
+app.use(globalLimiter);
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://clubtimoteo.vercel.app",
+  "https://www.app.clubtimoteo.com",
+  ...(process.env.EXTRA_CORS_ORIGINS
+    ? process.env.EXTRA_CORS_ORIGINS.split(",").map(o => o.trim())
+    : [])
+];
+
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:3000", 
-      "https://clubtimoteo.vercel.app",
-      "https://www.app.clubtimoteo.com"
-    ];
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Permitir requests sin origin (Postman, apps nativas, health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origen no permitido: ${origin}`));
   },
   credentials: true
 }));

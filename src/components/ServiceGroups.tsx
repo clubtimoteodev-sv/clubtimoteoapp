@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ArrowLeft, Users, ClipboardCheck, FileText, Plus } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface Explorer {
   id: string;
@@ -43,6 +43,11 @@ export function ServiceGroups({
   const isDesktop = useIsDesktop();
   const [groups, setGroups] = useState<ServiceGroupApi[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isReadOnly = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role === "lider_territorial"; }
+    catch { return false; }
+  })();
 
   useEffect(() => {
     loadGroups();
@@ -113,13 +118,15 @@ export function ServiceGroups({
             </p>
           </div>
 
-          <Button
-            onClick={() => onNavigate("service-schedule-creation")}
-            className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Crear Grupo
-          </Button>
+          {!isReadOnly && (
+            <Button
+              onClick={() => onNavigate("service-schedule-creation")}
+              className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear Grupo
+            </Button>
+          )}
         </div>
 
         {loading ? (
@@ -135,13 +142,15 @@ export function ServiceGroups({
                 No hay grupos creados
               </p>
 
-              <Button
-                onClick={() => onNavigate("service-schedule-creation")}
-                className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Crear primer grupo
-              </Button>
+              {!isReadOnly && (
+                <Button
+                  onClick={() => onNavigate("service-schedule-creation")}
+                  className="!text-white !bg-gradient-to-r !from-cyan-600 !to-sky-600 hover:!from-cyan-700 hover:!to-sky-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear primer grupo
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (

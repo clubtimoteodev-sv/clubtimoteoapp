@@ -56,7 +56,7 @@ const outpostInfo = {
   leader: storedUser.name || "Líder",
 };
 
-  const isReadOnly = storedUser.role === "lider territorial";
+  const isReadOnly = storedUser.role === "lider_territorial";
 
   const explorerColumns = [
     { key: "codigoInterno" as const, label: "Código" },

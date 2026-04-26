@@ -112,7 +112,7 @@ export function ExplorerDetail({
     try { return JSON.parse(localStorage.getItem("user") || "{}"); }
     catch { return {}; }
   })();
-  const isReadOnly = storedUser.role === "lider territorial";
+  const isReadOnly = storedUser.role === "lider_territorial";
 
   useEffect(() => {
     loadExplorer();

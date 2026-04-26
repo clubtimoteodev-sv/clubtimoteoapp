@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { ArrowLeft, Plus, Trash2, Pencil, CalendarDays, Users } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface Explorer {
   id: string;
@@ -242,15 +242,15 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
               </Button>
             </DialogTrigger>
 
-              <DialogContent className="max-w-xl">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+                <DialogHeader className="shrink-0">
                   <DialogTitle>{editId ? "Editar grupo" : "Nuevo grupo de servicio"}</DialogTitle>
                   <DialogDescription>
                     Selecciona fecha, nombre del servicio y miembros.
                   </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSave} className="space-y-4">
+                <form onSubmit={handleSave} className="flex-1 overflow-y-auto space-y-4 pr-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Fecha</Label>
@@ -281,7 +281,7 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
                       </Badge>
                     </div>
 
-                    <div className="max-h-80 overflow-y-auto border rounded-xl bg-white">
+                    <div className="overflow-y-auto border rounded-xl bg-white" style={{ maxHeight: '300px' }}>
                       {explorers.length === 0 ? (
                         <div className="p-4">
                           <p className="text-sm text-muted-foreground">
@@ -381,15 +381,15 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-xl">
-              <DialogHeader>
+            <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+              <DialogHeader className="shrink-0">
                 <DialogTitle>{editId ? "Editar grupo" : "Nuevo grupo de servicio"}</DialogTitle>
                 <DialogDescription>
                   Selecciona fecha, nombre del servicio y miembros.
                 </DialogDescription>
               </DialogHeader>
 
-              <form onSubmit={handleSave} className="space-y-4 pb-12 sm:pb-0">
+              <form onSubmit={handleSave} className="flex-1 overflow-y-auto space-y-4 pr-2 pb-12 sm:pb-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Fecha</Label>
@@ -420,7 +420,7 @@ export function ServiceScheduleCreation({ onBack }: ServiceScheduleCreationProps
                     </Badge>
                   </div>
 
-                  <div className="h-[40vh] sm:max-h-80 overflow-y-auto border rounded-xl bg-white">
+                  <div className="overflow-y-auto border rounded-xl bg-white" style={{ maxHeight: '200px' }}>
                     {explorers.length === 0 ? (
                       <div className="p-4">
                         <p className="text-sm text-muted-foreground">

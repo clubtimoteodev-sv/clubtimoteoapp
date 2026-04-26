@@ -13,6 +13,7 @@ import {
   BarChart3,
   Church,
   ChevronRight,
+  Map as MapIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -75,6 +76,7 @@ interface SidebarProps {
   userEmail?: string;
   userRole?: string;
   destacamentoName?: string; // NUEVO: Prop para el nombre de la iglesia
+  territorioName?: string; // Prop para el nombre del territorio
 }
 
 /** Returns user initials (up to 2 letters) from a full name */
@@ -96,8 +98,8 @@ function formatRole(role?: string): string {
     // ✅ FIX P2: Roles inconsistentes — ambas variantes del rol territorial
     "lider territorial": "Líder Territorial",
     "lider_territorial": "Líder Territorial",
-    "Lider Destacamento": "Administrador",
-    "lider_destacamento": "Administrador",
+    "Lider Destacamento": "Líder Local",
+    "lider_destacamento": "Líder Local",
   };
   return role ? (map[role] ?? role) : "Usuario";
 }
@@ -112,6 +114,7 @@ export function Sidebar({
   userEmail,
   userRole,
   destacamentoName, // NUEVO
+  territorioName,
 }: SidebarProps) {
   const isDesktop = useIsDesktop();
   const [destacamentos, setDestacamentos] = useState<Destacamento[]>([]);
@@ -143,14 +146,13 @@ export function Sidebar({
     if (isTerritorial && !isDrillDown) {
       items.push(
         { id: "regional-report", label: "Reporte Regional", icon: BarChart3 },
-        { id: "regional-comparison", label: "Destacamentos Pro", icon: UsersRound },
+        { id: "regional-comparison", label: "Destacamentos", icon: UsersRound },
         { id: "regional-attendance", label: "Ver Asistencia", icon: Eye },
         { id: "churches-list", label: "Exploradores de Región", icon: Church }
       );
     } else if (isTerritorial && isDrillDown) {
       items.push(
         { id: "explorers-list", label: "Exploradores", icon: Users },
-        { id: "attendance-taking", label: "Tomar asistencia", icon: ClipboardCheck },
         { id: "attendance-report", label: "Ver asistencia", icon: Eye },
         { id: "service-schedule", label: "Grupos de servicio", icon: UsersRound },
         { id: "finance-manager", label: "Finanzas", icon: DollarSign }
@@ -244,6 +246,40 @@ export function Sidebar({
     </div>
   )}
 
+  {/* Etiqueta (Badge) de Territorio */}
+  {!destacamentoName && territorioName && (
+    <div style={{ 
+      display: "inline-flex", 
+      alignItems: "center", 
+      gap: "6px", 
+      backgroundColor: "#f0fdf4",
+      border: "1px solid #bbf7d0",
+      padding: "4px 10px", 
+      borderRadius: "9999px",
+      width: "fit-content",
+      maxWidth: "100%"
+    }}>
+      <MapIcon style={{ 
+        flexShrink: 0,
+        width: "0.85rem", 
+        height: "0.85rem", 
+        color: "#16a34a" 
+      }} />
+      <span style={{ 
+        fontSize: "0.7rem", 
+        fontWeight: 700, 
+        color: "#15803d", 
+        textTransform: "uppercase", 
+        letterSpacing: "0.05em", 
+        whiteSpace: "nowrap", 
+        overflow: "hidden", 
+        textOverflow: "ellipsis" 
+      }}>
+        {territorioName}
+      </span>
+    </div>
+  )}
+
 </div>
 
         {!isDesktop && (
@@ -280,32 +316,7 @@ export function Sidebar({
             />
           ))}
 
-          {isTerritorial && destacamentos.length > 0 && (
-            <div style={{ marginTop: "1rem" }}>
-              <div style={{ marginBottom: "0.5rem", paddingLeft: "0.5rem", fontSize: "0.75rem", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em" }}>
-                MIS DESTACAMENTOS
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-                {destacamentos.map((dest) => (
-                  <button
-                    key={dest.id}
-                    onClick={() => handleNavigate(`view-destacamento:${dest.id}:${dest.nombre}`)}
-                    style={{
-                      width: "100%", textAlign: "left", padding: "0.5rem 1rem", fontSize: "0.875rem",
-                      color: "#4b5563", background: "transparent", border: "none", cursor: "pointer",
-                      borderRadius: "0.5rem", display: "flex", alignItems: "center"
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <Church size={14} style={{ marginRight: "0.5rem", color: "#6b7280" }} />
-                    <span style={{ flex: 1 }}>{dest.nombre}</span>
-                    <ChevronRight size={14} style={{ color: "#9ca3af" }} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+         
         </div>
       </nav>
 

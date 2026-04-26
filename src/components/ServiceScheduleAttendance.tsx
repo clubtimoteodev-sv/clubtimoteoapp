@@ -4,7 +4,7 @@ import { apiFetch } from "../services/api";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, FileText } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { Checkbox } from "./ui/checkbox";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
@@ -56,6 +56,7 @@ export function ServiceScheduleAttendance({
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [existingAttendanceId, setExistingAttendanceId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGroups();
@@ -97,20 +98,60 @@ export function ServiceScheduleAttendance({
   useEffect(() => {
     if (!selectedGroup) {
       setMemberAttendance({});
+      setExistingAttendanceId(null);
+      setServiceNotes("");
       return;
     }
 
-    const initialState: Record<string, AttendanceMemberState> = {};
-    selectedGroup.members.forEach((member) => {
-      initialState[member.explorer.id] = {
-        explorerId: member.explorer.id,
-        present: false,
-        note: "",
-      };
-    });
+    async function fetchExistingAttendance() {
+      try {
+        const records = await apiFetch(`/service-attendance/group/${selectedGroup!.id}`);
+        if (records && records.length > 0) {
+          const record = records[0];
+          setExistingAttendanceId(record.id);
+          setServiceNotes(record.serviceNotes || "");
 
-    setMemberAttendance(initialState);
-    setServiceNotes("");
+          const state: Record<string, AttendanceMemberState> = {};
+          selectedGroup!.members.forEach((member) => {
+            const attMember = record.members.find((m: any) => m.explorerId === member.explorer.id);
+            state[member.explorer.id] = {
+              explorerId: member.explorer.id,
+              present: attMember ? attMember.present : false,
+              note: attMember ? (attMember.note || "") : "",
+            };
+          });
+          setMemberAttendance(state);
+        } else {
+          // No existing record
+          setExistingAttendanceId(null);
+          setServiceNotes("");
+          const state: Record<string, AttendanceMemberState> = {};
+          selectedGroup!.members.forEach((member) => {
+            state[member.explorer.id] = {
+              explorerId: member.explorer.id,
+              present: false,
+              note: "",
+            };
+          });
+          setMemberAttendance(state);
+        }
+      } catch (error) {
+        console.error("Error fetching existing attendance:", error);
+        setExistingAttendanceId(null);
+        setServiceNotes("");
+        const state: Record<string, AttendanceMemberState> = {};
+        selectedGroup!.members.forEach((member) => {
+          state[member.explorer.id] = {
+            explorerId: member.explorer.id,
+            present: false,
+            note: "",
+          };
+        });
+        setMemberAttendance(state);
+      }
+    }
+
+    fetchExistingAttendance();
   }, [selectedGroup]);
 
   function handleToggleAttendance(explorerId: string) {
@@ -181,8 +222,13 @@ export function ServiceScheduleAttendance({
         note: memberAttendance[member.id]?.note ?? "",
       }));
 
-      await apiFetch("/service-attendance", {
-        method: "POST",
+      const method = existingAttendanceId ? "PATCH" : "POST";
+      const endpoint = existingAttendanceId
+        ? `/service-attendance/${existingAttendanceId}`
+        : "/service-attendance";
+
+      const res = await apiFetch(endpoint, {
+        method,
         body: JSON.stringify({
           groupId: selectedGroupId,
           serviceNotes,
@@ -190,19 +236,16 @@ export function ServiceScheduleAttendance({
         }),
       });
 
+      if (!existingAttendanceId && res.id) {
+        setExistingAttendanceId(res.id);
+      }
+
       toast.success("Asistencia guardada correctamente");
+      
+      setTimeout(() => {
+        onBack();
+      }, 1500);
 
-      const resetState: Record<string, AttendanceMemberState> = {};
-      groupMembers.forEach((member) => {
-        resetState[member.id] = {
-          explorerId: member.id,
-          present: false,
-          note: "",
-        };
-      });
-
-      setMemberAttendance(resetState);
-      setServiceNotes("");
     } catch (error) {
       console.error(error);
       toast.error("No se pudo guardar la asistencia");

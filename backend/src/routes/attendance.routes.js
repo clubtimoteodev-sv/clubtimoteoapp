@@ -218,25 +218,78 @@ router.get("/explorer/:explorerId", async (req, res) => {
 router.delete("/meetings/:id", requireNotTerritorial, async (req, res) => {
   try {
     const meetingId = req.params.id;
+    const justification = (req.body?.justification || "").trim();
 
-    // SEGURIDAD: Verificar propiedad antes de borrar
+    if (!justification) {
+      return res.status(400).json({ msg: "La justificación es requerida para eliminar una reunión" });
+    }
+
+    // SEGURIDAD: Verificar que la reunión sea del destacamento del usuario
     const meeting = await prisma.meeting.findFirst({
-      where: { id: meetingId, destacamentoId: req.user.destacamentoId }
+      where: { id: meetingId, destacamentoId: req.user.destacamentoId },
+      include: { destacamento: { include: { territorio: true } } }
     });
     if (!meeting) return res.status(404).json({ msg: "Reunión no encontrada o sin permiso" });
 
-    await prisma.attendanceRecord.deleteMany({
-      where: { meetingId }
+    // Obtener nombre real del usuario (fallback a BD si el JWT es antiguo)
+    let deletedByName = req.user.name;
+    if (!deletedByName || deletedByName === "Usuario") {
+      const dbUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { name: true } });
+      deletedByName = dbUser?.name || "Líder";
+    }
+
+    // 1️⃣  Guardar log ANTES de borrar (datos denormalizados)
+    await prisma.meetingDeletionLog.create({
+      data: {
+        meetingId:        meeting.id,
+        meetingType:      meeting.type,
+        meetingDate:      meeting.date,
+        destacamentoId:   meeting.destacamentoId,
+        destacamentoName: meeting.destacamento.nombre,
+        territorioId:     meeting.destacamento.territorioId || null,
+        deletedById:      req.user.id,
+        deletedByName,
+        justification,
+      }
     });
 
-    await prisma.meeting.delete({
-      where: { id: meetingId }
-    });
+    // 2️⃣  Borrar registros y reunión
+    await prisma.attendanceRecord.deleteMany({ where: { meetingId } });
+    await prisma.meeting.delete({ where: { id: meetingId } });
 
     res.json({ msg: "Reunión eliminada correctamente" });
 
   } catch (error) {
     console.error("Error deleting meeting:", error);
+    res.status(500).json({ msg: "Error interno del servidor" });
+  }
+});
+
+// ── Historial de eliminaciones (accesible también al lider_territorial) ──────
+router.get("/deletion-log", async (req, res) => {
+  try {
+    const { role, destacamentoId, territorioId } = req.user;
+
+    let where = {};
+
+    if (role === "admin") {
+      where = {}; // ve todo
+    } else if (role === "lider_territorial") {
+      where = { territorioId: territorioId || undefined };
+    } else {
+      // lider_destacamento: solo su destacamento
+      where = { destacamentoId: destacamentoId || undefined };
+    }
+
+    const logs = await prisma.meetingDeletionLog.findMany({
+      where,
+      orderBy: { deletedAt: "desc" },
+      take: 100,
+    });
+
+    res.json(logs);
+  } catch (error) {
+    console.error("Error fetching deletion log:", error);
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });

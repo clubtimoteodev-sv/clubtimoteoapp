@@ -10,7 +10,7 @@ import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ArrowLeft, Save, Calendar as CalendarIcon, Users } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface Explorer {
   id: string;
@@ -55,6 +55,11 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
   const [loading, setLoading] = useState(true);
   const [loadingMeeting, setLoadingMeeting] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const isReadOnly = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role === "lider_territorial"; }
+    catch { return false; }
+  })();
 
   useEffect(() => {
     async function loadExplorers() {
@@ -283,7 +288,7 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   required
-                  disabled={!!initialMeetingId}
+                  disabled={!!initialMeetingId || isReadOnly}
                 />
               </div>
 
@@ -298,7 +303,7 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
                   placeholder="Ej: Reunión General, Campamento, Actividad..."
                   value={meetingType}
                   onChange={(e) => setMeetingType(e.target.value)}
-                  disabled={!!initialMeetingId}
+                  disabled={!!initialMeetingId || isReadOnly}
                 />
               </div>
 
@@ -388,6 +393,7 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
                                 onCheckedChange={(checked) =>
                                   handleAttendanceChange(explorer.id, checked === true)
                                 }
+                                disabled={isReadOnly}
                               />
 
                             </div>
@@ -400,6 +406,7 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
                                 onChange={(e) =>
                                   handleJustificationChange(explorer.id, e.target.value)
                                 }
+                                disabled={isReadOnly}
                                 rows={2}
                               />
 
@@ -433,20 +440,19 @@ export function AttendanceTaking({ onBack, initialMeetingId }: AttendanceTakingP
               Cancelar
             </Button>
 
-            <Button
-              type="submit"
-              disabled={saving || isBusy}
-            >
-
-              <Save className="mr-2 h-4 w-4" />
-
-              {saving
-                ? "Guardando..."
-                : initialMeetingId
-                ? "Actualizar asistencia"
-                : "Guardar"}
-
-            </Button>
+            {!isReadOnly && (
+              <Button
+                type="submit"
+                disabled={saving || isBusy}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {saving
+                  ? "Guardando..."
+                  : initialMeetingId
+                  ? "Actualizar asistencia"
+                  : "Guardar"}
+              </Button>
+            )}
 
           </div>
 

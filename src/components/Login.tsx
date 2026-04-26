@@ -11,7 +11,8 @@ import {
   CardHeader,
   CardTitle
 } from "./ui/card";
-import { LogIn, Users } from "lucide-react";
+import { LogIn, Users, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 interface LoginProps {
   onLogin: (token: string) => void;
@@ -20,6 +21,7 @@ interface LoginProps {
 export function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,7 +50,7 @@ export function Login({ onLogin }: LoginProps) {
     } catch (err: any) {
       console.error("Login Error:", err);
       localStorage.removeItem("token");
-      alert(err.message === "Credenciales inválidas" ? err.message : `Error de conexión: ${err.message || 'Error desconocido'}`);
+      toast.error(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
@@ -61,13 +63,19 @@ export function Login({ onLogin }: LoginProps) {
         <CardHeader className="space-y-1 pb-6">
 
           <div className="mb-6 flex items-center justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600">
-              <Users className="h-8 w-8 text-white" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Club Timoteo Logo" 
+              className="h-20 w-25 object-contain drop-shadow-sm"
+              onError={(e) => {
+                // Si la imagen no existe, mostramos un recuadro temporal amigable
+                (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Club+Timoteo&background=4f46e5&color=fff&size=256";
+              }}
+            />
           </div>
 
           <CardTitle className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-center text-2xl text-transparent">
-            Bienvenido
+            Club Timoteo APP
           </CardTitle>
 
           <CardDescription className="text-center">
@@ -95,16 +103,27 @@ export function Login({ onLogin }: LoginProps) {
 
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-                disabled={loading}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11 pr-10"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  style={{ right: '0.875rem' }}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
           </CardContent>
@@ -119,13 +138,6 @@ export function Login({ onLogin }: LoginProps) {
               <LogIn className="mr-2 h-4 w-4" />
               {loading ? "Validando..." : "Iniciar sesión"}
             </Button>
-
-            <p className="text-center text-sm text-muted-foreground">
-              ¿Olvidaste tu contraseña?{" "}
-              <a href="#" className="text-indigo-600">
-                Recuperar
-              </a>
-            </p>
 
           </CardFooter>
         </form>
