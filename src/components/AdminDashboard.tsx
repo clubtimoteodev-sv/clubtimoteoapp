@@ -87,6 +87,9 @@ export default function AdminDashboard() {
   const [showDestacamentoModal, setShowDestacamentoModal] = useState(false);
   const [editingDestacamentoId, setEditingDestacamentoId] = useState<string | null>(null);
   
+  const [showTerritorioModal, setShowTerritorioModal] = useState(false);
+  const [tForm, setTForm] = useState({ nombre: "" });
+
   const [dForm, setDForm] = useState({ codigo: "", nombre: "", ciudad: "", territorioId: "" });
 
   // User Form
@@ -197,6 +200,19 @@ export default function AdminDashboard() {
       setShowDestacamentoModal(false);
       setEditingDestacamentoId(null);
       setDForm({ codigo: "", nombre: "", ciudad: "", territorioId: "" });
+      loadCatalogs();
+    } catch (err: any) { showToast(err.message, false); }
+    finally { setLoading(false); }
+  };
+
+  const handleCreateTerritorio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await apiFetch("/admin/catalog/territories", { method: "POST", body: tForm });
+      showToast("Territorio creado");
+      setShowTerritorioModal(false);
+      setTForm({ nombre: "" });
       loadCatalogs();
     } catch (err: any) { showToast(err.message, false); }
     finally { setLoading(false); }
@@ -582,6 +598,9 @@ export default function AdminDashboard() {
                     <MapIcon size={18} className="text-blue-600" />
                     <h3 className="font-bold text-gray-800">Territorios</h3>
                   </div>
+                  <button onClick={() => { setTForm({ nombre: "" }); setShowTerritorioModal(true); }} className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                    <Plus size={14} /> Crear Territorio
+                  </button>
                 </div>
                 <div className="divide-y divide-gray-100 flex-1 overflow-y-auto max-h-[400px]">
                   {territories.map(t => (
@@ -862,6 +881,25 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowDestacamentoModal(false)} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">Cancelar</button>
+                <button type="submit" disabled={loading} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-sm disabled:opacity-50">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nuevo Territorio */}
+      {showTerritorioModal && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50" style={{ zIndex: 60 }}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden p-6 relative">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><MapIcon size={18}/> Crear Territorio</h3>
+            <form onSubmit={handleCreateTerritorio} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del Territorio</label>
+                <input required value={tForm.nombre} onChange={e => setTForm({ nombre: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white" placeholder="Ej. Zona Occidente" />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setShowTerritorioModal(false)} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">Cancelar</button>
                 <button type="submit" disabled={loading} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-sm disabled:opacity-50">Guardar</button>
               </div>
             </form>
