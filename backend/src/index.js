@@ -16,28 +16,33 @@ import serviceGroupsRoutes from "./routes/service-groups.routes.js";
 import serviceAttendanceRoutes from "./routes/service-attendance.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import territorioRoutes from "./routes/territorio.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import { auditMiddleware } from "./middleware/audit.js";
 
 dotenv.config();
 
 const app = express();
 
+// Confiar en el proxy de Railway/Vercel para leer la IP real del usuario
+app.set('trust proxy', 1);
+
 // Seguridad: headers HTTP seguros
 app.use(helmet());
 
-// Rate limit global — 300 requests por IP cada 15 minutos
-const globalLimiter = rateLimit({
+// Rate limit global — 300 requests por IP cada 15 minutos (Solo API)
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { msg: "Demasiadas solicitudes. Intenta de nuevo en 15 minutos." }
 });
-app.use(globalLimiter);
 
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://clubtimoteo.vercel.app",
+  "https://app.clubtimoteo.com",
   "https://www.app.clubtimoteo.com",
   ...(process.env.EXTRA_CORS_ORIGINS
     ? process.env.EXTRA_CORS_ORIGINS.split(",").map(o => o.trim())
@@ -70,6 +75,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+app.use("/api", apiLimiter);
+
+// Audit middleware — intercepta escrituras exitosas en rutas /api/*
+app.use("/api", auditMiddleware);
+
 // routes
 app.use("/api/auth", authRoutes);
 app.use("/api/explorers", explorersRoutes);
@@ -81,6 +91,7 @@ app.use("/api/service-attendance", serviceAttendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/territorio", territorioRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ✅ CLEAN CODE P2: Global error handler — captura errores no manejados en rutas
 app.use((err, _req, res, _next) => {

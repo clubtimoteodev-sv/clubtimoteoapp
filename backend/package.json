@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "npx prisma@6  migrate deploy && node src/index.js",
+    "start": "npx prisma@6 db push --accept-data-loss && node src/index.js",
     "postinstall": "npx prisma@6 generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"

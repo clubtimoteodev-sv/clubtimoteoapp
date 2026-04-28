@@ -9,6 +9,16 @@ router.use(auth);
 
 router.get("/summary", async (req, res) => {
   try {
+    // El superadmin no tiene destacamento — devuelve resumen vacío
+    if (req.user.role === "superadmin") {
+      return res.json({
+        explorersCount: 0, monthlyAttendanceAverage: 0,
+        totalIncome: 0, totalExpense: 0, balance: 0,
+        serviceAttendancesThisMonth: 0, upcomingMeetings: [],
+        recentExplorers: [], lastMeetingSummary: null, recentFinanceMovements: []
+      });
+    }
+
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -102,9 +112,14 @@ router.get("/summary", async (req, res) => {
         }
       }),
 
-      // 7. Última reunión de la iglesia
+      // 7. Última reunión de la iglesia (que tenga asistencia registrada)
       prisma.meeting.findFirst({
-        where: whereClause,
+        where: {
+          ...whereClause,
+          records: {
+            some: {}
+          }
+        },
         orderBy: {
           date: "desc"
         },

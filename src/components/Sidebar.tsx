@@ -13,6 +13,7 @@ import {
   BarChart3,
   Church,
   ChevronRight,
+  Shield,
   Map as MapIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -119,6 +120,7 @@ export function Sidebar({
   const isDesktop = useIsDesktop();
   const [destacamentos, setDestacamentos] = useState<Destacamento[]>([]);
 
+  const isSuperAdmin = userRole === "superadmin";
   const isTerritorial = userRole === "lider_territorial";
   // ✅ PERF P2: isDrillDown memoizado — no lee localStorage en cada render
   const isDrillDown = useMemo(() => !!localStorage.getItem("overrideDestacamentoId"), [activeSection]);
@@ -134,6 +136,12 @@ export function Sidebar({
   // ✅ PERF P2: navItems memoizado — no se recalcula en cada re-render
   const navItems = useMemo(() => {
     const items: { id: string; label: string; icon: typeof LayoutDashboard }[] = [];
+
+    // Superadmin only sees the admin panel
+    if (isSuperAdmin) {
+      items.push({ id: "admin-home", label: "Panel Admin", icon: Shield });
+      return items;
+    }
 
     items.push({
       id: isTerritorial && !isDrillDown ? "territorial-home" : (isDrillDown ? "view-destacamento" : "home"),
@@ -169,7 +177,7 @@ export function Sidebar({
     }
 
     return items;
-  }, [isTerritorial, isDrillDown]);
+  }, [isSuperAdmin, isTerritorial, isDrillDown]);
 
   const handleNavigate = (section: string) => {
     onNavigate(section);

@@ -106,6 +106,17 @@ router.post("/login", loginLimiter, async (req, res) => {
         where: { id: user.id },
         data: { failedLoginAttempts: attempts, isLocked: true }
       });
+
+      // ⚠️ Emitir notificación al panel de admin
+      await prisma.adminNotification.create({
+        data: {
+          type: "ACCOUNT_LOCKED",
+          title: "Cuenta bloqueada por intentos fallidos",
+          message: `El usuario ${user.email} fue bloqueado tras 3 intentos fallidos de login.`,
+          metadata: { userId: user.id, email: user.email, name: user.name }
+        }
+      }).catch(() => {}); // No bloquear el flujo si falla
+
       return res.status(403).json({ msg: "Usuario bloqueado por demasiados intentos fallidos. Contacte a un administrador." });
     } else {
       await prisma.user.update({

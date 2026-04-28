@@ -67,6 +67,10 @@ model User {
   territorioId   String?
   territorio     Territorio?   @relation(fields: [territorioId], references: [id])
 
+  // PANEL ADMIN
+  auditLogs      AuditLog[]
+  backupLogs     BackupLog[]
+
   @@index([destacamentoId])
   @@index([territorioId])
 }
@@ -223,4 +227,52 @@ model ServiceAttendanceMember {
 
   @@unique([attendanceId, explorerId])
   @@index([explorerId])
+}
+
+// ──────────────────────────────────────────────
+// PANEL ADMIN
+// ──────────────────────────────────────────────
+
+/// Registro de todas las operaciones de escritura exitosas
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  endpoint  String
+  method    String
+  payload   String?  // JSON string del body
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([method])
+}
+
+/// Notificaciones para el administrador (ej: cuenta bloqueada)
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String   // "ACCOUNT_LOCKED", "SUSPICIOUS_ACTIVITY", etc.
+  title     String
+  message   String
+  metadata  Json?    // datos adicionales (userId, email, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
+}
+
+/// Historial de backups SQL generados
+model BackupLog {
+  id             String   @id @default(cuid())
+  filename       String
+  generatedById  String
+  createdAt      DateTime @default(now())
+
+  generatedBy    User     @relation(fields: [generatedById], references: [id], onDelete: Cascade)
+
+  @@index([generatedById])
+  @@index([createdAt])
 }

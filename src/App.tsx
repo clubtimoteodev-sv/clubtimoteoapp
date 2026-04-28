@@ -22,6 +22,7 @@ const ServiceScheduleAttendance = lazy(() => import("./components/ServiceSchedul
 const ServiceScheduleReport = lazy(() => import("./components/ServiceScheduleReport").then(m => ({ default: m.ServiceScheduleReport })));
 const DashboardTerritorial = lazy(() => import("./components/DashboardTerritorial"));
 const RegionalReport = lazy(() => import("./components/RegionalReport"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 
 const LoadingFallback = () => (
   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", minHeight: "400px" }}>
@@ -51,6 +52,7 @@ export default function App() {
       const raw = localStorage.getItem("user");
       if (raw) {
         const user = JSON.parse(raw);
+        if (user.role === "superadmin") return "admin-home";
         if (user.role === "lider_territorial") return "territorial-home";
       }
     } catch { /* ignore */ }
@@ -112,10 +114,8 @@ export default function App() {
       const raw = localStorage.getItem("user");
       if (raw) {
         const user = JSON.parse(raw);
-        if (user.role === "lider_territorial") {
-          setActiveSection("territorial-home");
-          return;
-        }
+        if (user.role === "superadmin") { setActiveSection("admin-home"); return; }
+        if (user.role === "lider_territorial") { setActiveSection("territorial-home"); return; }
       }
     } catch { /* ignore */ }
     setActiveSection("home");
@@ -215,6 +215,13 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case "admin-home":
+        return (
+          <ProtectedRoute allowedRoles={["superadmin"]} currentRole={currentUser?.role}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        );
+
       case "home":
         return <Home />;
 
