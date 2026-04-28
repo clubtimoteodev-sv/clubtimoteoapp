@@ -100,6 +100,7 @@ export default function AdminDashboard() {
   const [pwdForm, setPwdForm] = useState("");
 
   const showToast = (msg: string, ok = true) => {
+    window.alert(msg);
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 4000);
   };

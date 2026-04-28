@@ -21,14 +21,20 @@ export async function apiFetch(path, options = {}) {
     finalPath = `${path}${divider}destacamentoId=${overrideId}`;
   }
 
-  const res = await fetch(API + finalPath, {
+  const fetchOptions = {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {})
     }
-  });
+  };
+
+  if (options.body && typeof options.body === "object") {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  const res = await fetch(API + finalPath, fetchOptions);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ msg: "Error" }));

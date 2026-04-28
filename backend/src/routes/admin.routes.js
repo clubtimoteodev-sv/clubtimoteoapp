@@ -66,14 +66,16 @@ router.post("/users", async (req, res) => {
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user.id,
-        action: `Usuario creado: ${email} (${role})`,
-        endpoint: "/api/admin/users", method: "POST",
-        payload: JSON.stringify({ name, email, role })
-      }
-    });
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user?.id || req.userId || "UNKNOWN",
+          action: `Usuario creado: ${email} (${role})`,
+          endpoint: "/api/admin/users", method: "POST",
+          payload: JSON.stringify({ name, email, role })
+        }
+      });
+    } catch (auditErr) { console.error("[AuditLog]", auditErr); }
     res.status(201).json(user);
   } catch (err) {
     console.error("admin/create-user:", err);
@@ -194,11 +196,13 @@ router.put("/users/:id", async (req, res) => {
       }
     });
 
-    await prisma.auditLog.create({ data: {
-      userId: req.user.id, action: `Usuario editado: ${email}`,
-      endpoint: `/api/admin/users/${id}`, method: "PUT",
-      payload: JSON.stringify({ name, email, role, destacamentoId, territorioId })
-    }});
+    try {
+      await prisma.auditLog.create({ data: {
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Usuario editado: ${email}`,
+        endpoint: `/api/admin/users/${id}`, method: "PUT",
+        payload: JSON.stringify({ name, email, role, destacamentoId, territorioId })
+      }});
+    } catch (auditErr) { console.error("[AuditLog]", auditErr); }
 
     res.json(updatedUser);
   } catch (err) {
@@ -230,14 +234,19 @@ router.post("/catalog/territories", async (req, res) => {
 
     const newTerritorio = await prisma.territorio.create({ data: { nombre } });
 
-    await prisma.auditLog.create({ data: {
-      userId: req.user.id, action: `Territorio creado: ${nombre}`,
-      endpoint: "/api/admin/catalog/territories", method: "POST",
-      payload: JSON.stringify({ nombre })
-    }});
+    try {
+      await prisma.auditLog.create({ data: {
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Territorio creado: ${nombre}`,
+        endpoint: "/api/admin/catalog/territories", method: "POST",
+        payload: JSON.stringify({ nombre })
+      }});
+    } catch (auditErr) {
+      console.error("[AuditLog Error]", auditErr);
+    }
 
     res.status(201).json(newTerritorio);
   } catch (err) {
+    console.error("Error en POST /catalog/territories:", err);
     res.status(500).json({ msg: "Error al crear territorio" });
   }
 });
@@ -268,14 +277,19 @@ router.post("/catalog/destacamentos", async (req, res) => {
       data: { codigo, nombre, ciudad, territorioId }
     });
 
-    await prisma.auditLog.create({ data: {
-      userId: req.user.id, action: `Destacamento creado: ${nombre}`,
-      endpoint: "/api/admin/catalog/destacamentos", method: "POST",
-      payload: JSON.stringify({ codigo, nombre, territorioId })
-    }});
+    try {
+      await prisma.auditLog.create({ data: {
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Destacamento creado: ${nombre}`,
+        endpoint: "/api/admin/catalog/destacamentos", method: "POST",
+        payload: JSON.stringify({ codigo, nombre, territorioId })
+      }});
+    } catch (auditErr) {
+      console.error("[AuditLog Error]", auditErr);
+    }
 
     res.status(201).json(newDestacamento);
   } catch (err) {
+    console.error("Error en POST /catalog/destacamentos:", err);
     res.status(500).json({ msg: "Error al crear destacamento" });
   }
 });
@@ -295,14 +309,17 @@ router.put("/catalog/destacamentos/:id", async (req, res) => {
       data: { codigo, nombre, ciudad, territorioId }
     });
 
-    await prisma.auditLog.create({ data: {
-      userId: req.user.id, action: `Destacamento editado: ${nombre}`,
-      endpoint: `/api/admin/catalog/destacamentos/${id}`, method: "PUT",
-      payload: JSON.stringify({ codigo, nombre, territorioId })
-    }});
+    try {
+      await prisma.auditLog.create({ data: {
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Destacamento editado: ${nombre}`,
+        endpoint: `/api/admin/catalog/destacamentos/${id}`, method: "PUT",
+        payload: JSON.stringify({ codigo, nombre, territorioId })
+      }});
+    } catch (auditErr) { console.error("[AuditLog]", auditErr); }
 
     res.json(updated);
   } catch (err) {
+    console.error("Error PUT /catalog/destacamentos:", err);
     res.status(500).json({ msg: "Error al editar destacamento" });
   }
 });
