@@ -276,31 +276,31 @@ export default function AdminDashboard() {
 
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Shield className="text-white h-6 w-6" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                <Shield className="text-white h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Admin Control Center</h1>
-                <p className="text-xs font-medium text-gray-500 uppercase mt-0.5">Gestión Maestra • Club Timoteo</p>
+                <h1 className="text-base sm:text-xl font-bold text-gray-900">Admin Control Center</h1>
+                <p className="hidden sm:block text-xs font-medium text-gray-500 uppercase mt-0.5">Gestión Maestra • Club Timoteo</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <button onClick={() => { loadStats(); loadNotifications(); }} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-all">
-                <RefreshCw size={18} />
+            <div className="flex items-center gap-2">
+              <button onClick={() => { loadStats(); loadNotifications(); }} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-blue-600 transition-all">
+                <RefreshCw size={16} />
               </button>
               
               <div className="relative">
                 <button
                   onClick={() => setShowNotifs(v => !v)}
-                  className={`p-2 rounded-lg border transition-all ${unreadCount > 0 ? "bg-red-50 border-red-200 text-red-600" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}
+                  className={`p-2 rounded-lg border transition-all ${unreadCount > 0 ? "bg-red-50 border-red-200 text-red-600" : "bg-white border-gray-200 text-gray-500"}`}
                 >
-                  <Bell size={18} />
+                  <Bell size={16} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -308,14 +308,14 @@ export default function AdminDashboard() {
 
                 {/* Notifications Dropdown */}
                 {showNotifs && (
-                  <div className="absolute mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden" style={{ right: 0, top: '100%' }}>
+                  <div className="fixed sm:absolute bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden" style={{ right: 8, top: 58, width: 'min(320px, calc(100vw - 16px))' }}>
                     <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                       <span className="font-bold text-gray-800 text-sm flex items-center gap-2">
                         <Bell size={16} className="text-blue-500" /> Alertas de Seguridad
                       </span>
                       <button onClick={() => setShowNotifs(false)} className="p-1 text-gray-400 hover:text-gray-600"><X size={16} /></button>
                     </div>
-                    <div className="max-h-80 overflow-y-auto p-2">
+                    <div className="max-h-72 overflow-y-auto p-2">
                       {notifications.length === 0 ? (
                         <div className="py-8 text-center flex flex-col items-center gap-2">
                           <CheckCircle2 size={24} className="text-green-500 opacity-50" />
@@ -343,23 +343,24 @@ export default function AdminDashboard() {
             </div>
           </div>
           
-          {/* Tab Navigation */}
-          <div className="flex gap-2 overflow-x-auto pb-4 pt-2">
+          {/* Tab Navigation — abbreviated on mobile */}
+          <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-3 pt-1">
             {TABS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${tab === key ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${tab === key ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
               >
-                <Icon size={16} />
-                {label}
+                <Icon size={13} className="sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{label.split(" ")[0]}</span>
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
         
         {/* ── OVERVIEW ── */}
         {tab === "overview" && (
@@ -452,7 +453,45 @@ export default function AdminDashboard() {
             </div>
 
             <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-              <div className="overflow-x-auto">
+              {/* Mobile card view — visible on xs only */}
+              <div className="sm:hidden divide-y divide-gray-100">
+                {users.map(u => (
+                  <div key={u.id} className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 ${u.isLocked ? 'bg-red-500' : 'bg-blue-600'}`}>
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-gray-800 truncate text-sm">{u.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${u.role === "superadmin" ? "bg-purple-100 text-purple-800" : u.role === "lider_territorial" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"}`}>
+                            {ROLE_LABELS[u.role] || u.role}
+                          </span>
+                          {u.isLocked
+                            ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-800">Bloqueado</span>
+                            : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-800">Activo</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 justify-end">
+                      {u.role !== "superadmin" && (
+                        <button onClick={() => openEditModal(u)} className="p-2 rounded bg-gray-100 text-gray-600" title="Editar"><Edit2 size={14} /></button>
+                      )}
+                      <button onClick={() => setShowPwdModal(u.id)} className="p-2 rounded bg-gray-100 text-gray-600" title="Cambiar contraseña"><KeyRound size={14} /></button>
+                      {u.isLocked
+                        ? <button disabled={loading} onClick={() => handleAction("unlock", u.id, u.name)} className="flex items-center gap-1 px-2 py-1.5 rounded bg-green-100 text-green-800 text-[10px] font-bold"><Unlock size={12} /> Desbloquear</button>
+                        : u.role !== "superadmin" && <button disabled={loading} onClick={() => { if(window.confirm(`¿Desactivar acceso a ${u.name}?`)) handleAction("deactivate", u.id, u.name); }} className="p-2 rounded bg-red-50 text-red-600" title="Desactivar"><Ban size={14} /></button>
+                      }
+                    </div>
+                  </div>
+                ))}
+                {users.length === 0 && <div className="p-8 text-center text-gray-500">No hay usuarios para mostrar.</div>}
+              </div>
+
+              {/* Desktop table — hidden on mobile */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
