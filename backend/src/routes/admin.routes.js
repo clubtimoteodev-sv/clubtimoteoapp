@@ -373,31 +373,31 @@ router.post("/notifications/:id/read", async (req, res) => {
 
 // ── GET /backup/export ────────────────────────────────────────────────────────
 router.get("/backup/export", async (req, res) => {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) return res.status(500).json({ msg: "DATABASE_URL no definida" });
-
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `backup_clubtimoteo_${timestamp}.sql`;
+  const filename = `backup_clubtimoteo_${timestamp}.json`;
   const tmpDir = path.join(os.tmpdir(), "clubtimoteo_backups");
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   const filePath = path.join(tmpDir, filename);
 
   try {
-    const cleanUrl = dbUrl.replace(/[?&]schema=[^&]*/g, "");
-    
-    try {
-      // Intentar usar docker para garantizar PostgreSQL 18
-      await execAsync(`docker run --rm postgres:18 pg_dump "${cleanUrl}" --no-password > "${filePath}"`);
-    } catch (dockerErr) {
-      console.warn("Docker pg_dump falló, intentando pg_dump local...", dockerErr.message);
-      await execAsync(`"${PG_DUMP_BIN}" "${cleanUrl}" -f "${filePath}" --no-password`, {
-        env: { ...process.env, PATH: process.env.PATH || "/usr/bin:/usr/local/bin:/bin" }
-      });
+    const backupData = {};
+    const modelNames = Object.keys(prisma).filter(
+      key => !key.startsWith('_') && !key.startsWith('$') && typeof prisma[key].findMany === 'function'
+    );
+
+    for (const modelName of modelNames) {
+      backupData[modelName] = await prisma[modelName].findMany();
     }
+
+    const jsonString = JSON.stringify(backupData, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    );
+
+    fs.writeFileSync(filePath, jsonString, 'utf-8');
 
     try {
       await prisma.auditLog.create({ data: {
-        userId: req.user?.id || req.userId || "UNKNOWN", action: `Backup SQL generado: ${filename}`,
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Backup JSON generado: ${filename}`,
         endpoint: "/api/admin/backup/export", method: "GET",
         payload: JSON.stringify({ filename })
       }});
@@ -412,7 +412,7 @@ router.get("/backup/export", async (req, res) => {
   } catch (err) {
     console.error("backup/export:", err);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.status(500).json({ msg: "Error al generar el backup. Verifica que pg_dump (v18) esté disponible." });
+    res.status(500).json({ msg: "Error al generar el backup en formato JSON." });
   }
 });
 

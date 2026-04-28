@@ -262,7 +262,7 @@ export default function AdminDashboard() {
       const a = document.createElement("a");
       a.href = url;
       const ts = new Date().toISOString().replace(/[:.]/g, "-");
-      a.download = `backup_clubtimoteo_${ts}.sql`;
+      a.download = `backup_clubtimoteo_${ts}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast("Backup descargado correctamente");
