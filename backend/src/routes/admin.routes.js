@@ -384,15 +384,27 @@ router.get("/backup/export", async (req, res) => {
 
   try {
     const cleanUrl = dbUrl.replace(/[?&]schema=[^&]*/g, "");
-    await execAsync(`"${PG_DUMP_BIN}" "${cleanUrl}" -f "${filePath}" --no-password`, {
-      env: { ...process.env, PATH: process.env.PATH || "/usr/bin:/usr/local/bin:/bin" }
-    });
-    await prisma.auditLog.create({ data: {
-      userId: req.user.id, action: `Backup SQL generado: ${filename}`,
-      endpoint: "/api/admin/backup/export", method: "GET",
-      payload: JSON.stringify({ filename })
-    }});
-    await prisma.backupLog.create({ data: { filename, generatedById: req.user.id } });
+    
+    try {
+      // Intentar usar docker para garantizar PostgreSQL 18
+      await execAsync(`docker run --rm postgres:18 pg_dump "${cleanUrl}" --no-password > "${filePath}"`);
+    } catch (dockerErr) {
+      console.warn("Docker pg_dump falló, intentando pg_dump local...", dockerErr.message);
+      await execAsync(`"${PG_DUMP_BIN}" "${cleanUrl}" -f "${filePath}" --no-password`, {
+        env: { ...process.env, PATH: process.env.PATH || "/usr/bin:/usr/local/bin:/bin" }
+      });
+    }
+
+    try {
+      await prisma.auditLog.create({ data: {
+        userId: req.user?.id || req.userId || "UNKNOWN", action: `Backup SQL generado: ${filename}`,
+        endpoint: "/api/admin/backup/export", method: "GET",
+        payload: JSON.stringify({ filename })
+      }});
+    } catch (auditErr) { console.error("[AuditLog Error]", auditErr); }
+
+    await prisma.backupLog.create({ data: { filename, generatedById: req.user?.id || req.userId || "UNKNOWN" } });
+    
     res.download(filePath, filename, (err) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       if (err) console.error("Error descargando backup:", err);
@@ -400,7 +412,7 @@ router.get("/backup/export", async (req, res) => {
   } catch (err) {
     console.error("backup/export:", err);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.status(500).json({ msg: "Error al generar el backup. Verifica que pg_dump esté disponible." });
+    res.status(500).json({ msg: "Error al generar el backup. Verifica que pg_dump (v18) esté disponible." });
   }
 });
 
