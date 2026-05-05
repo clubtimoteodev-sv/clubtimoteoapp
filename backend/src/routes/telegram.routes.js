@@ -106,16 +106,28 @@ router.post("/webhook", async (req, res) => {
           body: formData
         });
 
+        // Buscar el id de un admin para los logs (ya que requieren Foreign Key a User)
+        const adminUser = await prisma.user.findFirst({ where: { role: "superadmin" } }) 
+          || await prisma.user.findFirst({ where: { role: "admin" } });
+        const adminId = adminUser?.id || "UNKNOWN";
+
         // Registrar en auditoría
-        await prisma.auditLog.create({
-          data: {
-            userId: "telegram_bot", // ID referencial para comandos de bot
-            action: `Backup JSON generado vía Telegram: ${filename}`,
-            endpoint: "telegram/webhook",
-            method: "POST",
-            payload: null
-          }
-        });
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId: adminId,
+              action: `Backup JSON generado vía Telegram: ${filename}`,
+              endpoint: "telegram/webhook",
+              method: "POST",
+              payload: null
+            }
+          });
+          await prisma.backupLog.create({
+            data: { filename, generatedById: adminId }
+          });
+        } catch (logErr) {
+          console.error("No se pudo guardar el log de auditoría/backup:", logErr);
+        }
 
       } catch (err) {
         console.error("Error generando backup por Telegram:", err);
