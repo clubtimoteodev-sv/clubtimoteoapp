@@ -313,7 +313,15 @@ router.post("/request-unlock", unlockRequestLimiter, async (req, res) => {
           body: JSON.stringify({
             chat_id: TELEGRAM_CHAT_ID,
             text,
-            parse_mode: "Markdown"
+            parse_mode: "Markdown",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: "🔓 Solo Desbloquear", callback_data: `unlock:${user.id}` },
+                  { text: "🔑 Resetear Contraseña", callback_data: `reset:${user.id}` }
+                ]
+              ]
+            }
           })
         });
       } catch (err) {

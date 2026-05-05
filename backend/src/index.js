@@ -18,6 +18,7 @@ import serviceAttendanceRoutes from "./routes/service-attendance.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import territorioRoutes from "./routes/territorio.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import telegramRoutes from "./routes/telegram.routes.js";
 import { auditMiddleware } from "./middleware/audit.js";
 
 dotenv.config();
@@ -94,6 +95,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/territorio", territorioRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/telegram", telegramRoutes);
 
 // ✅ CLEAN CODE P2: Global error handler — captura errores no manejados en rutas
 app.use((err, _req, res, _next) => {
