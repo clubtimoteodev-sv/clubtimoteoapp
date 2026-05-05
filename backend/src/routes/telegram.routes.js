@@ -131,7 +131,7 @@ router.post("/webhook", async (req, res) => {
 
       const newText = `🔑 *Contraseña Reseteada con Éxito*\n\n` +
                       `Se ha generado una clave temporal para *${user.name}* (${user.email}).\n\n` +
-                      `👇 Copia esta contraseña temporal y envíasela al usuario:\n` +
+                      `👇 Copia esta contraseña temporal y inicia sesión en su cuenta:\n` +
                       `\`${tempPassword}\`\n\n` +
                       `_El sistema le exigirá cambiarla obligatoriamente al entrar._`;
 
