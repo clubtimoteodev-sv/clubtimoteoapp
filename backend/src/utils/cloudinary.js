@@ -1,20 +1,32 @@
 /**
  * Cloudinary SDK — Configuración Central de Seguridad
  *
- * Responsabilidades:
- *  - Inicializar el SDK con credenciales del entorno
- *  - Proveer helpers para subida segura y generación de Signed URLs
- *  - Garantizar type:"authenticated", strip_metadata y eager 500x500
+ * La configuración es LAZY: cloudinary.config() se ejecuta solo cuando
+ * se invoca alguna función de este módulo, no al importarlo.
+ * Esto permite que el servidor arranque correctamente aunque las variables
+ * CLOUDINARY_* no estén configuradas aún (ej. en Railway antes de agregarlas).
  */
 import { v2 as cloudinary } from "cloudinary";
-import { mustEnv } from "./env.js";
 
-cloudinary.config({
-  cloud_name: mustEnv("CLOUDINARY_CLOUD_NAME"),
-  api_key:    mustEnv("CLOUDINARY_API_KEY"),
-  api_secret: mustEnv("CLOUDINARY_API_SECRET"),
-  secure: true,
-});
+/** Inicializa el SDK una sola vez; lanza un error descriptivo si faltan vars */
+let _configured = false;
+function ensureConfigured() {
+  if (_configured) return;
+
+  const cloudName  = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey     = process.env.CLOUDINARY_API_KEY;
+  const apiSecret  = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(
+      "Cloudinary no está configurado. Agrega CLOUDINARY_CLOUD_NAME, " +
+      "CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET a las variables de entorno."
+    );
+  }
+
+  cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret, secure: true });
+  _configured = true;
+}
 
 /**
  * Sube una imagen de perfil de explorador a Cloudinary de forma segura.
@@ -25,6 +37,7 @@ cloudinary.config({
  * @returns {Promise<import("cloudinary").UploadApiResponse>}
  */
 export async function uploadExplorerPhoto(buffer, codigoDestacamento, explorerId) {
+  ensureConfigured();
   // Construimos el public_id determinístico para evitar duplicados:
   // club-timoteo/destacamentos/{codigo}/perfiles/{explorerId}
   const publicId = `club-timoteo/destacamentos/${codigoDestacamento}/perfiles/${explorerId}`;
@@ -70,6 +83,7 @@ export async function uploadExplorerPhoto(buffer, codigoDestacamento, explorerId
  * @returns {string} URL firmada y temporal
  */
 export function generateSignedUrl(publicId) {
+  ensureConfigured();
   const expiresAt = Math.floor(Date.now() / 1000) + 10 * 60; // +10 minutos
 
   return cloudinary.utils.url(publicId, {
@@ -89,6 +103,7 @@ export function generateSignedUrl(publicId) {
  * @param {string} publicId
  */
 export async function deleteExplorerPhoto(publicId) {
+  ensureConfigured();
   return cloudinary.uploader.destroy(publicId, {
     type:       "authenticated",
     invalidate: true,
