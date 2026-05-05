@@ -10,6 +10,10 @@ import { auth } from "../middleware/auth.js";
 const router = Router();
 const JWT_SECRET = mustEnv("JWT_SECRET");
 
+// Variables opcionales para notificaciones por Telegram
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+
 // ✅ SEGURIDAD P1: Rate limit en login — máx 10 intentos por IP cada 15 minutos
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -292,6 +296,30 @@ router.post("/request-unlock", unlockRequestLimiter, async (req, res) => {
         metadata: { userId: user.id, email: user.email, phone, userMessage: message }
       }
     });
+
+    // Enviar alerta en tiempo real a Telegram (si está configurado)
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+      try {
+        const text = `🚨 *NUEVA SOLICITUD DE DESBLOQUEO* 🚨\n\n` +
+                     `👤 *Usuario:* ${user.name}\n` +
+                     `📧 *Email:* ${user.email}\n` +
+                     `📞 *Teléfono:* ${phone}\n` +
+                     (message ? `📝 *Mensaje:* "${message}"\n` : "") +
+                     `\n_Por favor, entra al panel de administración para atender esta solicitud._`;
+
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text,
+            parse_mode: "Markdown"
+          })
+        });
+      } catch (err) {
+        console.error("Error al enviar notificación a Telegram:", err);
+      }
+    }
   }
 
   // Siempre retornamos ok para no revelar si el email existe o no a atacantes
