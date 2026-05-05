@@ -107,7 +107,6 @@ router.post("/login", loginLimiter, async (req, res) => {
         data: { failedLoginAttempts: attempts, isLocked: true }
       });
 
-      // ⚠️ Emitir notificación al panel de admin
       await prisma.adminNotification.create({
         data: {
           type: "ACCOUNT_LOCKED",
@@ -115,7 +114,7 @@ router.post("/login", loginLimiter, async (req, res) => {
           message: `El usuario ${user.email} fue bloqueado tras 3 intentos fallidos de login.`,
           metadata: { userId: user.id, email: user.email, name: user.name }
         }
-      }).catch(() => {}); // No bloquear el flujo si falla
+      }).catch(() => {});
 
       return res.status(403).json({ msg: "Usuario bloqueado por demasiados intentos fallidos. Contacte a un administrador." });
     } else {
@@ -134,28 +133,29 @@ router.post("/login", loginLimiter, async (req, res) => {
     });
   }
 
-  // Inyectamos el destacamentoId en el token
   const token = jwt.sign(
-    { 
-      sub: user.id, 
+    {
+      sub: user.id,
       name: user.name,
       role: user.role,
       destacamentoId: user.destacamentoId,
-      territorioId: user.territorioId
-    }, 
-    JWT_SECRET, 
+      territorioId: user.territorioId,
+      mustChangePassword: user.mustChangePassword   // ← incluido en el token
+    },
+    JWT_SECRET,
     { expiresIn: "7d" }
   );
 
   res.json({
     token,
-    user: { 
-      id: user.id, 
-      name: user.name, 
-      email: user.email, 
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
       role: user.role,
       destacamentoId: user.destacamentoId,
       territorioId: user.territorioId,
+      mustChangePassword: user.mustChangePassword,  // ← incluido en la respuesta
       destacamentoNombre: user.destacamento?.nombre || null,
       destacamentoCiudad: user.destacamento?.ciudad || null,
       destacamentoIglesia: user.destacamento?.iglesia || null,
@@ -163,6 +163,98 @@ router.post("/login", loginLimiter, async (req, res) => {
       territorioNombre: user.territorio?.nombre || null,
     }
   });
+});
+
+// ── PUT /api/auth/update-password-required ─────────────────────────────────
+// Cambio OBLIGATORIO de contraseña (cuando mustChangePassword === true).
+// No requiere contraseña actual (ya fue validada en el login con clave temporal).
+router.put("/update-password-required", auth, async (req, res) => {
+  const schema = z.object({
+    newPassword:     z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+    confirmPassword: z.string().min(1)
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: parsed.error.errors[0].message });
+
+  const { newPassword, confirmPassword } = parsed.data;
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ msg: "Las contraseñas no coinciden." });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) return res.status(404).json({ msg: "Usuario no encontrado." });
+
+  if (!user.mustChangePassword) {
+    return res.status(400).json({ msg: "No hay cambio de contraseña pendiente." });
+  }
+
+  const hash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hash, mustChangePassword: false, failedLoginAttempts: 0 }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      userId:   user.id,
+      action:   "Contraseña obligatoria cambiada por el usuario",
+      endpoint: "/api/auth/update-password-required",
+      method:   "PUT",
+      payload:  null
+    }
+  }).catch(() => {});
+
+  // Emitir nuevo token sin mustChangePassword
+  const newToken = jwt.sign(
+    { sub: user.id, name: user.name, role: user.role, destacamentoId: user.destacamentoId, territorioId: user.territorioId, mustChangePassword: false },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.json({ ok: true, msg: "Contraseña actualizada correctamente.", token: newToken });
+});
+
+// ── PUT /api/auth/change-password ─────────────────────────────────────────
+// Cambio VOLUNTARIO de contraseña (desde Ajustes). Requiere contraseña actual.
+router.put("/change-password", auth, async (req, res) => {
+  const schema = z.object({
+    currentPassword: z.string().min(1),
+    newPassword:     z.string().min(8, "La nueva contraseña debe tener al menos 8 caracteres"),
+    confirmPassword: z.string().min(1)
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: parsed.error.errors[0].message });
+
+  const { currentPassword, newPassword, confirmPassword } = parsed.data;
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ msg: "Las contraseñas no coinciden." });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) return res.status(404).json({ msg: "Usuario no encontrado." });
+
+  const ok = await bcrypt.compare(currentPassword, user.password);
+  if (!ok) return res.status(401).json({ msg: "La contraseña actual es incorrecta." });
+
+  const hash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hash, failedLoginAttempts: 0 }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      userId:   user.id,
+      action:   "Contraseña cambiada voluntariamente",
+      endpoint: "/api/auth/change-password",
+      method:   "PUT",
+      payload:  null
+    }
+  }).catch(() => {});
+
+  res.json({ ok: true, msg: "Contraseña actualizada correctamente." });
 });
 
 export default router;

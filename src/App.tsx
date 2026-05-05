@@ -4,6 +4,7 @@ import { Eye, X } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { MobileHeader } from "./components/MobileHeader";
 import { Login } from "./components/Login";
+import { ForcePasswordChange } from "./components/ForcePasswordChange";
 import Home from "./components/Home";
 
 // Code splitting: Carga diferida de módulos pesados
@@ -23,6 +24,7 @@ const ServiceScheduleReport = lazy(() => import("./components/ServiceScheduleRep
 const DashboardTerritorial = lazy(() => import("./components/DashboardTerritorial"));
 const RegionalReport = lazy(() => import("./components/RegionalReport"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
+const Settings = lazy(() => import("./components/Settings").then(m => ({ default: m.Settings })));
 
 const LoadingFallback = () => (
   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", minHeight: "400px" }}>
@@ -69,11 +71,20 @@ export default function App() {
   const [attendanceReportSource, setAttendanceReportSource] =
     useState<AttendanceReportSource>("menu");
 
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string; destacamentoNombre?: string; territorioNombre?: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string; destacamentoNombre?: string; territorioNombre?: string; mustChangePassword?: boolean } | null>(() => {
     try {
       const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
+  });
+
+  // ── Flag de cambio obligatorio de contraseña ──────────────────────────────────
+  const [mustChangePassword, setMustChangePassword] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) return JSON.parse(raw).mustChangePassword === true;
+    } catch { /* ignore */ }
+    return false;
   });
 
   useEffect(() => {
@@ -114,6 +125,11 @@ export default function App() {
       const raw = localStorage.getItem("user");
       if (raw) {
         const user = JSON.parse(raw);
+        // Verificar cambio obligatorio de contraseña
+        if (user.mustChangePassword) {
+          setMustChangePassword(true);
+          return;
+        }
         if (user.role === "superadmin") { setActiveSection("admin-home"); return; }
         if (user.role === "lider_territorial") { setActiveSection("territorial-home"); return; }
       }
@@ -369,6 +385,9 @@ export default function App() {
           />
         );
 
+      case "settings":
+        return <Settings onBack={goHome} />;
+
       case "finance-manager":
         return <FinanceManager onBack={goHome} />;
 
@@ -377,8 +396,36 @@ export default function App() {
     }
   };
 
+  // ── Interceptor: cambio obligatorio de contraseña ───────────────────────────
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  if (mustChangePassword) {
+    return (
+      <ForcePasswordChange
+        userName={currentUser?.name || "Usuario"}
+        onSuccess={(newToken) => {
+          setMustChangePassword(false);
+          // Actualizar currentUser desde localStorage
+          try {
+            const raw = localStorage.getItem("user");
+            if (raw) setCurrentUser(JSON.parse(raw));
+          } catch { /* ignore */ }
+          // Navegar según rol
+          try {
+            const raw = localStorage.getItem("user");
+            if (raw) {
+              const user = JSON.parse(raw);
+              if (user.role === "superadmin") { setActiveSection("admin-home"); return; }
+              if (user.role === "lider_territorial") { setActiveSection("territorial-home"); return; }
+            }
+          } catch { /* ignore */ }
+          setActiveSection("home");
+        }}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return (

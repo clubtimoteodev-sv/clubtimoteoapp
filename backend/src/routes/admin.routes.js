@@ -106,6 +106,51 @@ router.post("/users/:id/unlock", async (req, res) => {
   }
 });
 
+// ── POST /users/:id/reset-password ───────────────────────────────────────────
+router.post("/users/:id/reset-password", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true, name: true } });
+    if (!target) return res.status(404).json({ msg: "Usuario no encontrado." });
+
+    // Contraseña temporal segura y memorable
+    const tempPassword = `Timoteo${new Date().getFullYear()}!`;
+
+    const hash = await bcrypt.hash(tempPassword, 10);
+    await prisma.user.update({
+      where: { id },
+      data: {
+        password: hash,
+        mustChangePassword: true,
+        failedLoginAttempts: 0,
+        isLocked: false          // Desbloquear si estaba bloqueado
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId:   req.user.id,
+        action:   `Contraseña reseteada por administrador para usuario ${target.email}`,
+        endpoint: `/api/admin/users/${id}/reset-password`,
+        method:   "POST",
+        payload:  JSON.stringify({ targetUserId: id, targetEmail: target.email })
+      }
+    });
+
+    res.json({
+      ok: true,
+      msg: `Contraseña reseteada. El usuario deberá cambiarla en su próximo inicio de sesión.`,
+      tempPassword,              // Texto plano para que el admin se la entregue
+      userName: target.name,
+      userEmail: target.email,
+    });
+  } catch (err) {
+    console.error("admin/reset-password:", err);
+    res.status(500).json({ msg: "Error al resetear la contraseña." });
+  }
+});
+
 // ── POST /users/:id/deactivate ────────────────────────────────────────────────
 router.post("/users/:id/deactivate", async (req, res) => {
   try {

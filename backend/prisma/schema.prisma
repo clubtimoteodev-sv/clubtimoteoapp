@@ -57,6 +57,7 @@ model User {
 
   failedLoginAttempts Int      @default(0)
   isLocked            Boolean  @default(false)
+  mustChangePassword  Boolean  @default(false)
 
   // MODIFICADO: Ahora es opcional (String?) porque un Líder Territorial 
   // podría no pertenecer a un destacamento específico, sino a un territorio entero.

@@ -228,18 +228,21 @@ export default function AdminDashboard() {
     setShowDestacamentoModal(true);
   };
 
-  const handleChangePwd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwdForm.length < 6) return showToast("La contraseña debe tener 6+ caracteres", false);
+  // Contraseña temporal generada
+  const [resetPwdResult, setResetPwdResult] = useState<{ name: string; email: string; tempPwd: string } | null>(null);
+
+  const handleResetPassword = async (id: string, name: string) => {
+    if (!window.confirm(`¿Seguro que deseas resetear la contraseña de ${name}? Se generará una contraseña temporal segura.`)) return;
     setLoading(true);
     try {
-      await apiFetch(`/admin/users/${showPwdModal}/change-password`, { method: "POST", body: { newPassword: pwdForm } });
-      showToast("Contraseña actualizada correctamente");
-      setShowPwdModal(null); setPwdForm("");
+      const data = await apiFetch(`/admin/users/${id}/reset-password`, { method: "POST" });
+      setResetPwdResult({ name: data.userName, email: data.userEmail, tempPwd: data.tempPassword });
       loadUsers();
     } catch (err: any) {
-      showToast(`Error: ${err.message || "No se pudo cambiar"}`, false);
-    } finally { setLoading(false); }
+      showToast(`Error: ${err.message || "No se pudo resetear la contraseña"}`, false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDismissNotif = async (id: string) => {
@@ -496,7 +499,7 @@ export default function AdminDashboard() {
                       {u.role !== "superadmin" && (
                         <button onClick={() => openEditModal(u)} className="p-2 rounded bg-gray-100 text-gray-600" title="Editar"><Edit2 size={14} /></button>
                       )}
-                      <button onClick={() => setShowPwdModal(u.id)} className="p-2 rounded bg-gray-100 text-gray-600" title="Cambiar contraseña"><KeyRound size={14} /></button>
+                      <button onClick={() => handleResetPassword(u.id, u.name)} className="p-2 rounded bg-gray-100 text-gray-600" title="Resetear contraseña"><KeyRound size={14} /></button>
                       {u.isLocked
                         ? <button disabled={loading} onClick={() => handleAction("unlock", u.id, u.name)} className="flex items-center gap-1 px-2 py-1.5 rounded bg-green-100 text-green-800 text-[10px] font-bold"><Unlock size={12} /> Desbloquear</button>
                         : u.role !== "superadmin" && <button disabled={loading} onClick={() => { if(window.confirm(`¿Desactivar acceso a ${u.name}?`)) handleAction("deactivate", u.id, u.name); }} className="p-2 rounded bg-red-50 text-red-600" title="Desactivar"><Ban size={14} /></button>
@@ -559,7 +562,7 @@ export default function AdminDashboard() {
                             {u.role !== "superadmin" && (
                               <button onClick={() => openEditModal(u)} className="p-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors" title="Editar Información"><Edit2 size={16} /></button>
                             )}
-                            <button onClick={() => setShowPwdModal(u.id)} className="p-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors" title="Cambiar Contraseña"><KeyRound size={16} /></button>
+                            <button onClick={() => handleResetPassword(u.id, u.name)} className="p-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors" title="Resetear Contraseña"><KeyRound size={16} /></button>
                             {u.isLocked ? (
                               <button disabled={loading} onClick={() => handleAction("unlock", u.id, u.name)} className="flex items-center gap-1 px-3 py-1.5 rounded bg-green-100 text-green-800 text-xs font-bold hover:bg-green-200 transition-colors disabled:opacity-50">
                                 <Unlock size={14} /> Desbloquear
@@ -908,25 +911,34 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 2. Modal Cambio Contraseña */}
-      {showPwdModal && (
+      {/* 2. Modal Resultado Reset Contraseña */}
+      {resetPwdResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><KeyRound size={18} className="text-gray-500"/> Cambiar Contraseña</h2>
-              <button onClick={() => {setShowPwdModal(null); setPwdForm("");}} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col p-6 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">¡Contraseña reseteada!</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              La contraseña temporal para <strong>{resetPwdResult.name}</strong> ({resetPwdResult.email}) ha sido generada exitosamente.
+            </p>
             
-            <form onSubmit={handleChangePwd} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nueva Contraseña</label>
-                <input required minLength={6} type="text" value={pwdForm} onChange={e => setPwdForm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono" placeholder="Escriba la nueva contraseña" autoFocus />
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Contraseña Temporal</p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono text-xl font-bold text-gray-900 tracking-wider">
+                  {resetPwdResult.tempPwd}
+                </span>
               </div>
-              <div className="flex gap-3 justify-end mt-4">
-                <button type="button" onClick={() => {setShowPwdModal(null); setPwdForm("");}} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200">Cancelar</button>
-                <button type="submit" disabled={loading || pwdForm.length < 6} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">Guardar</button>
-              </div>
-            </form>
+            </div>
+
+            <p className="text-xs text-red-600 font-medium bg-red-50 p-2 rounded mb-6">
+              Guarda esta contraseña ahora. El usuario deberá cambiarla obligatoriamente al iniciar sesión.
+            </p>
+
+            <button onClick={() => setResetPwdResult(null)} className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all">
+              Entendido, cerrar
+            </button>
           </div>
         </div>
       )}

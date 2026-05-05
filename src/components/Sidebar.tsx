@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Shield,
   Map as MapIcon,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -175,6 +176,9 @@ export function Sidebar({
         { id: "finance-manager", label: "Finanzas", icon: DollarSign }
       );
     }
+
+    // Add Settings to the end for all roles except superadmin
+    items.push({ id: "settings", label: "Ajustes", icon: Settings });
 
     return items;
   }, [isSuperAdmin, isTerritorial, isDrillDown]);
