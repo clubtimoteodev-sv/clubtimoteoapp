@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { apiFetch } from "../services/api";
+import { useEffect, useRef, useState } from "react";
+import { apiFetch, getToken } from "../services/api";
+import { SecureImage } from "./ui/SecureImage";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -27,6 +27,8 @@ import {
   FileCheck2,
   Hash,
   GraduationCap,
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -108,11 +110,19 @@ export function ExplorerDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Explorer | null>(null);
 
+  // ── Foto de perfil segura ────────────────────────────────────────────────────
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  // Key para forzar re-render de SecureImage tras subida exitosa
+  const [photoKey, setPhotoKey] = useState(0);
+
   const storedUser = (() => {
     try { return JSON.parse(localStorage.getItem("user") || "{}"); }
     catch { return {}; }
   })();
   const isReadOnly = storedUser.role === "lider_territorial";
+  const canManagePhoto =
+    storedUser.role === "superadmin" || storedUser.role === "lider_destacamento";
 
   useEffect(() => {
     loadExplorer();
@@ -217,8 +227,43 @@ export function ExplorerDetail({
     return `http://localhost:4000${raw}`;
   };
 
-  const getPhotoSrc = () => {
-    return buildFileUrl(explorer?.fotoUrl || explorer?.foto || null) || undefined;
+  // ── Handler de subida de foto ──────────────────────────────────────────────
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !explorer) return;
+
+    setPhotoUploading(true);
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      const API = import.meta.env.VITE_API_URL as string;
+      const res = await fetch(`${API}/explorers/${explorer.id}/photo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ msg: "Error" }));
+        throw new Error(err.msg || "Error al subir la foto");
+      }
+
+      const data = await res.json();
+      // Actualizar el publicId en el state local
+      setExplorer((prev) => prev ? { ...prev, fotoUrl: data.publicId } : prev);
+      // Forzar re-render de SecureImage
+      setPhotoKey((k) => k + 1);
+      toast.success("Foto de perfil actualizada correctamente ✓");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al subir la foto";
+      toast.error(message);
+    } finally {
+      setPhotoUploading(false);
+      // Reset input para permitir re-subir el mismo archivo
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
   };
 
   const handleEdit = () => {
@@ -425,12 +470,64 @@ export function ExplorerDetail({
         <Card className="border border-gray-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
-              <Avatar className="mb-4 h-24 w-24 border border-gray-200">
-                <AvatarImage src={getPhotoSrc()} alt={current.nombre} />
-                <AvatarFallback className="bg-gray-100 text-2xl font-semibold text-gray-700">
-                  {getInitials(current.nombre, current.apellidos)}
-                </AvatarFallback>
-              </Avatar>
+              {/* ── Foto de perfil segura (Cloudinary Signed URL) ─────────── */}
+              <div className="relative mb-4">
+                {current.fotoUrl && current.fotoUrl.startsWith("club-timoteo/") ? (
+                  <SecureImage
+                    key={photoKey}
+                    publicId={current.fotoUrl}
+                    explorerName={`${current.nombre} ${current.apellidos}`}
+                    size={96}
+                    className="border-2 border-gray-200 shadow-sm"
+                  />
+                ) : (
+                  /* Fallback para fotos legacy o sin foto */
+                  <div
+                    style={{
+                      width: 96, height: 96, borderRadius: "50%",
+                      background: "#e2e8f0", display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                      fontSize: 32, fontWeight: 700, color: "#64748b",
+                      border: "2px solid #e2e8f0",
+                    }}
+                  >
+                    {getInitials(current.nombre, current.apellidos)}
+                  </div>
+                )}
+
+                {/* Botón de subida de foto — solo para roles autorizados */}
+                {canManagePhoto && !isEditing && (
+                  <>
+                    <input
+                      ref={photoInputRef}
+                      id="photo-upload-input"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+                      className="sr-only"
+                      onChange={handlePhotoUpload}
+                      disabled={photoUploading}
+                    />
+                    <label
+                      htmlFor="photo-upload-input"
+                      title="Cambiar foto de perfil"
+                      style={{
+                        position: "absolute", bottom: 0, right: 0,
+                        width: 28, height: 28, borderRadius: "50%",
+                        background: photoUploading ? "#94a3b8" : "#2563eb",
+                        border: "2px solid white",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        cursor: photoUploading ? "not-allowed" : "pointer",
+                        boxShadow: "0 2px 6px rgba(0,0,0,.2)",
+                        transition: "background .15s",
+                      }}
+                    >
+                      {photoUploading
+                        ? <Loader2 style={{ width: 14, height: 14, color: "white", animation: "spin 1s linear infinite" }} />
+                        : <Camera style={{ width: 14, height: 14, color: "white" }} />}
+                    </label>
+                  </>
+                )}
+              </div>
 
               <h2 className="text-xl font-semibold text-gray-900">
                 {current.nombre} {current.apellidos}

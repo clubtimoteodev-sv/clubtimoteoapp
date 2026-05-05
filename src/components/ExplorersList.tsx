@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { ExportManager } from "./ExportManager";
 import { apiFetch } from "../services/api";
+import { SecureImage } from "./ui/SecureImage";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent } from "./ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ArrowLeft, Search, UserPlus, Eye, FileText } from "lucide-react";
 
@@ -116,13 +116,6 @@ const outpostInfo = {
 
   const getInitials = (nombre: string, apellidos: string) => {
     return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
-  };
-
-  const getPhotoSrc = (explorer: Explorer) => {
-    const raw = explorer.fotoUrl || explorer.foto || null;
-    if (!raw) return undefined;
-    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-    return `http://localhost:4000${raw}`;
   };
 
   const getDocumentsStatus = (explorer: Explorer) => {
@@ -253,12 +246,27 @@ const outpostInfo = {
               >
                 <CardContent className="p-4">
                   <div className="mb-3 flex items-start space-x-3">
-                    <Avatar className="h-14 w-14 flex-shrink-0">
-                      <AvatarImage src={getPhotoSrc(explorer)} alt={explorer.nombre} />
-                      <AvatarFallback className="bg-gray-100 text-gray-700">
+                  {/* ── Foto de perfil con lazy loading seguro ────────────── */}
+                    {explorer.fotoUrl && explorer.fotoUrl.startsWith("club-timoteo/") ? (
+                      <SecureImage
+                        publicId={explorer.fotoUrl}
+                        explorerName={`${explorer.nombre} ${explorer.apellidos}`}
+                        size={56}
+                        className="flex-shrink-0"
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 56, height: 56, borderRadius: "50%",
+                          background: "#e2e8f0", display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                          fontSize: 18, fontWeight: 700, color: "#64748b",
+                          flexShrink: 0,
+                        }}
+                      >
                         {getInitials(explorer.nombre, explorer.apellidos)}
-                      </AvatarFallback>
-                    </Avatar>
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <p className="mb-1 truncate text-sm font-medium text-gray-900">

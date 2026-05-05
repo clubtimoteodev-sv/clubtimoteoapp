@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import explorersRoutes from "./routes/explorers.routes.js";
+import photosRoutes from "./routes/photos.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
@@ -83,6 +84,7 @@ app.use("/api", auditMiddleware);
 // routes
 app.use("/api/auth", authRoutes);
 app.use("/api/explorers", explorersRoutes);
+app.use("/api/explorers", photosRoutes);  // Fotos seguras (Cloudinary)
 app.use("/api/upload", uploadRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/finance", financeRoutes);
