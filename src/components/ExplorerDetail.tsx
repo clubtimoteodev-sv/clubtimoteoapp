@@ -29,6 +29,7 @@ import {
   GraduationCap,
   Camera,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsDesktop } from "../hooks/useIsDesktop";
@@ -251,9 +252,8 @@ export function ExplorerDetail({
       }
 
       const data = await res.json();
-      // Actualizar el publicId en el state local
       setExplorer((prev) => prev ? { ...prev, fotoUrl: data.publicId } : prev);
-      // Forzar re-render de SecureImage
+      if (isEditing && editForm) setEditForm((prev) => prev ? { ...prev, fotoUrl: data.publicId } : prev);
       setPhotoKey((k) => k + 1);
       toast.success("Foto de perfil actualizada correctamente ✓");
     } catch (err: unknown) {
@@ -261,8 +261,27 @@ export function ExplorerDetail({
       toast.error(message);
     } finally {
       setPhotoUploading(false);
-      // Reset input para permitir re-subir el mismo archivo
       if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  // ── Handler de eliminación de foto ────────────────────────────────────────
+  const handleDeletePhoto = async () => {
+    if (!explorer?.fotoUrl) return;
+    if (!window.confirm("\u00bfEliminar la foto de perfil? Esta acción no se puede deshacer.")) return;
+
+    setPhotoUploading(true);
+    try {
+      await apiFetch(`/explorers/${explorer.id}/photo`, { method: "DELETE" });
+      setExplorer((prev) => prev ? { ...prev, fotoUrl: null } : prev);
+      if (editForm) setEditForm((prev) => prev ? { ...prev, fotoUrl: null } : prev);
+      setPhotoKey((k) => k + 1);
+      toast.success("Foto eliminada correctamente");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al eliminar la foto";
+      toast.error(message);
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -495,8 +514,8 @@ export function ExplorerDetail({
                   </div>
                 )}
 
-                {/* Botón de subida de foto — solo para roles autorizados */}
-                {canManagePhoto && !isEditing && (
+                {/* Botón de cámara flotante — siempre visible para roles autorizados */}
+                {canManagePhoto && (
                   <>
                     <input
                       ref={photoInputRef}
@@ -528,6 +547,60 @@ export function ExplorerDetail({
                   </>
                 )}
               </div>
+
+              {/* ── Panel de gestión de foto en modo edición ──────────────── */}
+              {canManagePhoto && isEditing && (
+                <div
+                  style={{
+                    display: "flex", gap: "0.5rem", marginTop: "0.5rem",
+                    marginBottom: "0.25rem", flexWrap: "wrap", justifyContent: "center",
+                  }}
+                >
+                  {/* Botón: Cambiar foto */}
+                  <label
+                    htmlFor="photo-upload-input"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                      padding: "0.35rem 0.75rem", borderRadius: "0.5rem",
+                      border: "1px solid #bfdbfe",
+                      background: photoUploading ? "#e2e8f0" : "#eff6ff",
+                      color: photoUploading ? "#94a3b8" : "#1d4ed8",
+                      fontSize: "0.75rem", fontWeight: 600,
+                      cursor: photoUploading ? "not-allowed" : "pointer",
+                      transition: "background .15s",
+                    }}
+                    title="Seleccionar nueva foto"
+                  >
+                    {photoUploading
+                      ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} />
+                      : <Camera style={{ width: 13, height: 13 }} />}
+                    Cambiar foto
+                  </label>
+
+                  {/* Botón: Eliminar foto — solo si tiene foto Cloudinary */}
+                  {current.fotoUrl?.startsWith("club-timoteo/") && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePhoto}
+                      disabled={photoUploading}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                        padding: "0.35rem 0.75rem", borderRadius: "0.5rem",
+                        border: "1px solid #fecaca",
+                        background: photoUploading ? "#e2e8f0" : "#fef2f2",
+                        color: photoUploading ? "#94a3b8" : "#dc2626",
+                        fontSize: "0.75rem", fontWeight: 600,
+                        cursor: photoUploading ? "not-allowed" : "pointer",
+                        transition: "background .15s",
+                      }}
+                      title="Eliminar foto de perfil"
+                    >
+                      <Trash2 style={{ width: 13, height: 13 }} />
+                      Eliminar foto
+                    </button>
+                  )}
+                </div>
+              )}
 
               <h2 className="text-xl font-semibold text-gray-900">
                 {current.nombre} {current.apellidos}
