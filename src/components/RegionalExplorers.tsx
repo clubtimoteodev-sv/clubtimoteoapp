@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Church, Search, Loader2, ArrowUpDown } from "lucide-react";
 import { apiFetch } from "../services/api";
 import { ExportManager } from "./ExportManager";
@@ -20,12 +21,15 @@ const stringToColor = (str: string) => {
 };
 
 export default function RegionalExplorers({ onBack }: RegionalExplorersProps) {
-  const [explorers, setExplorers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBrigada, setFilterBrigada] = useState("all");
   const [filterDestacamento, setFilterDestacamento] = useState("all");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const { data: explorers = [], isLoading: loading } = useQuery({
+    queryKey: ["explorers"],
+    queryFn: () => apiFetch("/explorers"),
+  });
 
   const getBrigada = (age: number) => {
     if (age <= 10) return { name: "Amiguitos de Jesús", color: "bg-sky-100 text-sky-700" };
@@ -33,15 +37,7 @@ export default function RegionalExplorers({ onBack }: RegionalExplorersProps) {
     return { name: "Servicio Cristiano", color: "bg-rose-100 text-rose-700" };
   };
 
-  const destacamentos = Array.from(new Set(explorers.map(e => e.destacamento?.nombre).filter(Boolean))).sort();
-
-  useEffect(() => {
-    // Al no haber override, cargará todos los de la región
-    apiFetch("/explorers")
-      .then(setExplorers)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const destacamentos = Array.from(new Set(explorers.map((e: any) => e.destacamento?.nombre).filter(Boolean))).sort();
 
   const filtered = explorers.filter((e) => {
     const age = Math.floor((new Date().getTime() - new Date(e.fechaNacimiento).getTime()) / 31557600000);

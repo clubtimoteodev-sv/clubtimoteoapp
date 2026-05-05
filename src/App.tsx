@@ -1,5 +1,29 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Eye, X } from "lucide-react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 9 * 60 * 1000,
+      gcTime: 15 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 9 * 60 * 1000, // 9 minutos de datos "frescos"
+      gcTime: 15 * 60 * 1000, // 15 minutos en memoria antes de limpieza
+      refetchOnWindowFocus: false, // Opcional: no re-fetchear al cambiar de pestaña si los datos están "fresh"
+      retry: 1,
+    },
+  },
+});
 
 import { Sidebar } from "./components/Sidebar";
 import { MobileHeader } from "./components/MobileHeader";
@@ -152,6 +176,7 @@ export default function App() {
     setDrilledName("");
     setAttendanceReportSource("menu");
     setIsSidebarOpen(false);
+    queryClient.clear();
   };
 
   const handleSidebarNavigate = (section: string) => {
@@ -397,22 +422,19 @@ export default function App() {
   };
 
   // ── Interceptor: cambio obligatorio de contraseña ───────────────────────────
+  let content;
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  if (mustChangePassword) {
-    return (
+    content = <Login onLogin={handleLogin} />;
+  } else if (mustChangePassword) {
+    content = (
       <ForcePasswordChange
         userName={currentUser?.name || "Usuario"}
         onSuccess={(newToken) => {
           setMustChangePassword(false);
-          // Actualizar currentUser desde localStorage
           try {
             const raw = localStorage.getItem("user");
             if (raw) setCurrentUser(JSON.parse(raw));
           } catch { /* ignore */ }
-          // Navegar según rol
           try {
             const raw = localStorage.getItem("user");
             if (raw) {
@@ -426,98 +448,104 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
+  } else {
+    content = (
+      <div style={{ display: "flex", height: "100vh", background: "#f9fafb", overflow: "hidden" }}>
+        <Sidebar
+          activeSection={activeSection}
+          onNavigate={handleSidebarNavigate}
+          onLogout={handleLogout}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          userName={currentUser?.name}
+          userEmail={currentUser?.email}
+          userRole={currentUser?.role}
+          destacamentoName={currentUser?.destacamentoNombre}
+          territorioName={currentUser?.territorioNombre}
+        />
+
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <MobileHeader
+            onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            title={getSectionTitle()}
+          />
+
+          <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
+            {drilledName && (
+              <div 
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 30,
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  padding: "1rem 1.25rem",
+                  background: "linear-gradient(to right, #4c1d95, #4338ca)",
+                  color: "white",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  flexShrink: 0,
+                  flexWrap: "wrap"
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.1rem", fontWeight: 700, minWidth: 0, flex: 1 }}>
+                  <Eye size={22} style={{ color: "#c7d2fe", flexShrink: 0 }} />
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    Modo Líder Territorial <span style={{ opacity: 0.75, fontWeight: 500, margin: "0 0.25rem" }}>|</span> <strong>{drilledName}</strong>
+                  </span>
+                  <span style={{
+                    display: "inline-block",
+                    marginLeft: "0.5rem",
+                    fontSize: "0.65rem",
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                    padding: "0.125rem 0.5rem",
+                    borderRadius: "9999px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    whiteSpace: "nowrap"
+                  }}>
+                    Solo lectura
+                  </span>
+                </span>
+                <button 
+                  onClick={exitDrillDown} 
+                  style={{
+                    backgroundColor: "white",
+                    color: "#4338ca",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.875rem",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    cursor: "pointer",
+                    border: "none",
+                    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  <X size={16} /> Salir del modo territorial
+                </button>
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <Suspense fallback={<LoadingFallback />}>
+                {renderContent()}
+              </Suspense>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f9fafb", overflow: "hidden" }}>
-      <Sidebar
-        activeSection={activeSection}
-        onNavigate={handleSidebarNavigate}
-        onLogout={handleLogout}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        userName={currentUser?.name}
-        userEmail={currentUser?.email}
-        userRole={currentUser?.role}
-        destacamentoName={currentUser?.destacamentoNombre}
-        territorioName={currentUser?.territorioNombre}
-      />
-
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <MobileHeader
-          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          title={getSectionTitle()}
-        />
-
-        <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
-          {drilledName && (
-            <div 
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 30,
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "0.75rem",
-                padding: "1rem 1.25rem",
-                background: "linear-gradient(to right, #4c1d95, #4338ca)",
-                color: "white",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                flexShrink: 0,
-                flexWrap: "wrap"
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.1rem", fontWeight: 700, minWidth: 0, flex: 1 }}>
-                <Eye size={22} style={{ color: "#c7d2fe", flexShrink: 0 }} />
-                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  Modo Líder Territorial <span style={{ opacity: 0.75, fontWeight: 500, margin: "0 0.25rem" }}>|</span> <strong>{drilledName}</strong>
-                </span>
-                <span style={{
-                  display: "inline-block",
-                  marginLeft: "0.5rem",
-                  fontSize: "0.65rem",
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  padding: "0.125rem 0.5rem",
-                  borderRadius: "9999px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  whiteSpace: "nowrap"
-                }}>
-                  Solo lectura
-                </span>
-              </span>
-              <button 
-                onClick={exitDrillDown} 
-                style={{
-                  backgroundColor: "white",
-                  color: "#4338ca",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  cursor: "pointer",
-                  border: "none",
-                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                <X size={16} /> Salir del modo territorial
-              </button>
-            </div>
-          )}
-          <div style={{ flex: 1 }}>
-            <Suspense fallback={<LoadingFallback />}>
-              {renderContent()}
-            </Suspense>
-          </div>
-        </main>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      {content}
+    </QueryClientProvider>
   );
 }

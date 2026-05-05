@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { ExportManager } from "./ExportManager";
 import { apiFetch } from "../services/api";
@@ -40,8 +41,11 @@ interface ExplorersListProps {
 export function ExplorersList({ onBack, onViewExplorer, onAddNew }: ExplorersListProps) {
   const isDesktop = useIsDesktop();
   const [searchTerm, setSearchTerm] = useState("");
-  const [explorers, setExplorers] = useState<Explorer[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: explorers = [], isLoading: loading } = useQuery({
+    queryKey: ["explorers"],
+    queryFn: () => apiFetch("/explorers"),
+  });
 
   // Outpost info from localStorage user object (saved on login)
   const storedUser = (() => {
@@ -68,21 +72,6 @@ const outpostInfo = {
     { key: "telefonoResponsable" as const, label: "Tel. Responsable" },
     { key: "direccion" as const, label: "Dirección" },
   ];
-
-  useEffect(() => {
-    async function loadExplorers() {
-      try {
-        const data = await apiFetch("/explorers");
-        setExplorers(data);
-      } catch (err) {
-        console.error("Error loading explorers:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadExplorers();
-  }, []);
 
   const filteredExplorers = explorers.filter((explorer) => {
     const term = searchTerm.toLowerCase().trim();
