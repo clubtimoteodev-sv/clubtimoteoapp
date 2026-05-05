@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import bcrypt from "bcrypt";
+import { Blob } from "buffer";
 
 const router = Router();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -57,6 +58,78 @@ router.post("/webhook", async (req, res) => {
   // Respondemos rápido a Telegram con 200 OK para que no reintente
   res.sendStatus(200);
 
+  // 1. Procesar mensajes de texto ordinarios (ej. comandos como /backup)
+  if (update.message && update.message.text) {
+    const message = update.message;
+    const chatId = message.chat.id.toString();
+
+    // Solo el Admin puede enviar comandos
+    if (chatId !== TELEGRAM_CHAT_ID) return;
+
+    if (message.text === "/backup") {
+      try {
+        // Enviar mensaje de "Procesando..."
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: "⏳ Generando volcado de base de datos..." })
+        });
+
+        // Extraer la data tal como en admin.routes.js
+        const backupData = {};
+        const modelNames = Object.keys(prisma).filter(
+          key => !key.startsWith('_') && !key.startsWith('$') && typeof prisma[key].findMany === 'function'
+        );
+
+        for (const modelName of modelNames) {
+          backupData[modelName] = await prisma[modelName].findMany();
+        }
+
+        const jsonString = JSON.stringify(backupData, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        );
+
+        // Crear archivo en memoria
+        const buffer = Buffer.from(jsonString, 'utf-8');
+        const blob = new Blob([buffer], { type: 'application/json' });
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const filename = `backup_clubtimoteo_${timestamp}.json`;
+
+        // Enviar el documento directamente a Telegram
+        const formData = new FormData();
+        formData.append('chat_id', TELEGRAM_CHAT_ID);
+        formData.append('document', blob, filename);
+
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
+          method: "POST",
+          body: formData
+        });
+
+        // Registrar en auditoría
+        await prisma.auditLog.create({
+          data: {
+            userId: "telegram_bot", // ID referencial para comandos de bot
+            action: `Backup JSON generado vía Telegram: ${filename}`,
+            endpoint: "telegram/webhook",
+            method: "POST",
+            payload: null
+          }
+        });
+
+      } catch (err) {
+        console.error("Error generando backup por Telegram:", err);
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: "❌ Error interno al generar el backup." })
+        });
+      }
+    }
+    return;
+  }
+
+  // 2. Procesar botones interactivos (callback_query)
   if (!update.callback_query) return;
 
   const callbackQuery = update.callback_query;
