@@ -257,4 +257,45 @@ router.put("/change-password", auth, async (req, res) => {
   res.json({ ok: true, msg: "Contraseña actualizada correctamente." });
 });
 
+// ── POST /api/auth/request-unlock ─────────────────────────────────────────
+// Permite a un usuario bloqueado enviar una solicitud de soporte al admin.
+const unlockRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3, // Máximo 3 solicitudes por IP por hora
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: "Demasiadas solicitudes. Intenta más tarde." }
+});
+
+router.post("/request-unlock", unlockRequestLimiter, async (req, res) => {
+  const schema = z.object({
+    email: z.string().email(),
+    phone: z.string().min(8, "El teléfono debe tener al menos 8 caracteres"),
+    message: z.string().max(255).optional()
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ msg: parsed.error.errors[0].message });
+
+  const { email, phone, message } = parsed.data;
+
+  // Buscamos al usuario de forma silenciosa
+  const user = await prisma.user.findUnique({ where: { email } });
+  
+  // Si el usuario existe y está bloqueado, creamos la notificación
+  if (user && user.isLocked) {
+    await prisma.adminNotification.create({
+      data: {
+        type: "UNLOCK_REQUEST",
+        title: "Solicitud de Desbloqueo",
+        message: `${user.name} solicita desbloquear su cuenta. Teléfono: ${phone}. ${message ? `Mensaje: ${message}` : ""}`,
+        metadata: { userId: user.id, email: user.email, phone, userMessage: message }
+      }
+    });
+  }
+
+  // Siempre retornamos ok para no revelar si el email existe o no a atacantes
+  res.json({ ok: true, msg: "Tu solicitud ha sido enviada al administrador." });
+});
+
 export default router;
