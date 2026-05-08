@@ -176,7 +176,8 @@ router.get("/photo/:publicId(*)", canManagePhotos, async (req, res) => {
     // Generar URL firmada con expiración de 10 minutos
     const signedUrl = generateSignedUrl(rawPublicId);
 
-    // ── Registro de auditoría (acceso a foto privada) ─────────────────────────
+    // ── Registro de auditoría (acceso a foto privada) - DESHABILITADO PARA NO ENSUCIAR LOS LOGS ──
+    /*
     await prisma.auditLog.create({
       data: {
         userId:   req.user.id,
@@ -186,6 +187,7 @@ router.get("/photo/:publicId(*)", canManagePhotos, async (req, res) => {
         payload:  JSON.stringify({ publicId: rawPublicId, codigoDestacamento }),
       },
     }).catch(err => console.error("[Audit] photo view:", err));
+    */
 
     res.json({ signedUrl, expiresIn: 600 });
   } catch (err) {
