@@ -1,17 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Eye, X } from "lucide-react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 9 * 60 * 1000,
-      gcTime: 15 * 60 * 1000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
