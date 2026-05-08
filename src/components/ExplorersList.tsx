@@ -21,6 +21,7 @@ interface Explorer {
   medicinaControlada?: string | null;
   foto?: string | null;
   fotoUrl?: string | null;
+  fotoUrlThumb?: string | null;
   recetaUrl?: string | null;
   permisoUrl?: string | null;
   nombreResponsable: string;
@@ -244,19 +245,33 @@ const outpostInfo = {
               >
                 <CardContent className="p-4">
                   <div className="mb-3 flex items-start space-x-3">
-                  {/* ── Avatar optimizado en lista (solo iniciales) ────────────── */}
-                    <div
-                      style={{
-                        width: 56, height: 56, borderRadius: "50%",
-                        background: getAvatarColor(`${explorer.nombre} ${explorer.apellidos}`),
-                        display: "flex",
-                        alignItems: "center", justifyContent: "center",
-                        fontSize: 18, fontWeight: 700, color: "#ffffff",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {getInitials(explorer.nombre, explorer.apellidos)}
-                    </div>
+                  {/* ── Avatar miniatura cacheado desde el servidor ────────────── */}
+                    {explorer.fotoUrlThumb ? (
+                      <img
+                        src={explorer.fotoUrlThumb}
+                        alt={`${explorer.nombre} ${explorer.apellidos}`}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: 56, height: 56, borderRadius: "50%",
+                          objectFit: "cover", flexShrink: 0,
+                          border: "1px solid #e2e8f0"
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 56, height: 56, borderRadius: "50%",
+                          background: getAvatarColor(`${explorer.nombre} ${explorer.apellidos}`),
+                          display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                          fontSize: 18, fontWeight: 700, color: "#ffffff",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {getInitials(explorer.nombre, explorer.apellidos)}
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <p className="mb-1 truncate text-sm font-medium text-gray-900">

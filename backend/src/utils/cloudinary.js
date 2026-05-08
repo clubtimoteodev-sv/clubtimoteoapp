@@ -99,6 +99,34 @@ export function generateSignedUrl(publicId) {
 }
 
 /**
+ * Genera una URL firmada de miniatura (100x100) con expiración redondeada
+ * a la siguiente hora. Esto permite que el navegador de los usuarios
+ * guarde la foto en caché (ahorrando mucho ancho de banda de Cloudinary).
+ *
+ * @param {string} publicId
+ * @returns {string} URL firmada para thumbnail
+ */
+export function generateSignedUrlThumb(publicId) {
+  ensureConfigured();
+  
+  // Expiración estable: final de la hora actual
+  const now = new Date();
+  now.setMinutes(59, 59, 999);
+  const expiresAt = Math.floor(now.getTime() / 1000);
+
+  return cloudinary.utils.url(publicId, {
+    type:       "authenticated",
+    sign_url:   true,
+    expires_at: expiresAt,
+    transformation: [
+      { width: 100, height: 100, crop: "fill", gravity: "face" },
+      { fetch_format: "auto", quality: "auto" }
+    ],
+    secure: true,
+  });
+}
+
+/**
  * Elimina una imagen de Cloudinary (para limpieza al reemplazar).
  * @param {string} publicId
  */

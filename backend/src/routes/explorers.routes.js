@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { auth } from "../middleware/auth.js";
 import { buildTerritoryWhere, requireNotTerritorial } from "../utils/territory.js";
+import { generateSignedUrlThumb } from "../utils/cloudinary.js";
 
 const router = Router();
 router.use(auth);
@@ -44,7 +45,12 @@ router.get("/", async (req, res) => {
     });
 
 
-    res.json(list);
+    const listWithThumbs = list.map(exp => ({
+      ...exp,
+      fotoUrlThumb: exp.fotoUrl ? generateSignedUrlThumb(exp.fotoUrl) : null
+    }));
+
+    res.json(listWithThumbs);
   } catch (error) {
     console.error("Error getting explorers:", error);
     res.status(500).json({ msg: "Error interno del servidor" });
