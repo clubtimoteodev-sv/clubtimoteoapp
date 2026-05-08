@@ -14,7 +14,6 @@ const movementSchema = z.object({
   description: z.string().min(1),
   date: z.string().min(1),
   recipient: z.string().min(1),
-  receiptUrl: z.string().optional().nullable(),
 });
 
 router.get("/", async (req, res) => {
@@ -106,7 +105,6 @@ router.post("/", requireNotTerritorial, async (req, res) => {
         description: data.description,
         date: new Date(data.date),
         recipient: data.recipient,
-        receiptUrl: data.receiptUrl || null,
         destacamentoId: req.user.destacamentoId // ASIGNACIÓN: Sella el movimiento a la iglesia
       },
     });
@@ -146,7 +144,6 @@ router.patch("/:id", requireNotTerritorial, async (req, res) => {
         description: data.description,
         date: new Date(data.date),
         recipient: data.recipient,
-        receiptUrl: data.receiptUrl || null,
       },
     });
 

@@ -169,7 +169,6 @@ model FinanceMovement {
   description    String
   date           DateTime
   recipient      String
-  receiptUrl     String?
   destacamentoId String
   createdAt      DateTime     @default(now())
 

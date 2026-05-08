@@ -38,7 +38,6 @@ import {
   X,
   Pencil,
   Trash2,
-  Receipt,
   Search,
   Eye,
 } from "lucide-react";
@@ -55,7 +54,6 @@ interface Movement {
   description: string;
   date: string;
   recipient: string;
-  receiptUrl?: string | null;
   createdAt?: string;
 }
 
@@ -88,8 +86,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedReceiptFile, setSelectedReceiptFile] = useState<File | null>(null);
-  const [selectedReceiptName, setSelectedReceiptName] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -238,8 +234,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
 
   function resetForm() {
     setNewMovement(initialForm);
-    setSelectedReceiptFile(null);
-    setSelectedReceiptName("");
     setEditId(null);
   }
 
@@ -266,38 +260,10 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
       date: movement.date.slice(0, 10),
       recipient: movement.recipient,
     });
-    setSelectedReceiptFile(null);
-    setSelectedReceiptName(movement.receiptUrl ? "Recibo ya guardado" : "");
     setIsDialogOpen(true);
   }
 
-  async function uploadReceiptIfNeeded(): Promise<string | null> {
-    if (!selectedReceiptFile) return null;
 
-    const formData = new FormData();
-    formData.append("file", selectedReceiptFile);
-
-    const token = localStorage.getItem("token");
-
-    const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
-    const res = await fetch(`${API}/upload`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      body: formData,
-    });
-
-    if (!res.ok) {
-      let msg = "Error subiendo recibo";
-      try {
-        const err = await res.json();
-        msg = err.msg || msg;
-      } catch {}
-      throw new Error(msg);
-    }
-
-    const data = await res.json();
-    return data.url || null;
-  }
 
   async function handleSaveMovement(e: React.FormEvent) {
     e.preventDefault();
@@ -332,17 +298,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
     try {
       setIsSaving(true);
 
-      let receiptUrl: string | null | undefined = undefined;
-
-      if (selectedReceiptFile) {
-        receiptUrl = await uploadReceiptIfNeeded();
-      } else if (editId) {
-        const existing = movements.find((m) => m.id === editId);
-        receiptUrl = existing?.receiptUrl || null;
-      } else {
-        receiptUrl = null;
-      }
-
       const payload = {
         type: newMovement.type,
         amount,
@@ -350,7 +305,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
         description: newMovement.description.trim(),
         date: newMovement.date,
         recipient: newMovement.recipient.trim(),
-        receiptUrl,
       };
 
       if (editId) {
@@ -614,44 +568,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                   className="h-11"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Recibo</Label>
-              <label className="flex items-center justify-center gap-2 border rounded-md h-11 cursor-pointer px-3">
-                <Upload className="w-4 h-4" />
-                <span className="text-sm truncate">
-                  {selectedReceiptName || "Subir recibo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setSelectedReceiptFile(file);
-                    setSelectedReceiptName(file?.name || "");
-                  }}
-                />
-              </label>
-
-              {selectedReceiptName ? (
-                <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-                  <span className="text-xs truncate">{selectedReceiptName}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedReceiptFile(null);
-                      setSelectedReceiptName("");
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : null}
-            </div>
 
             <div className="flex gap-3 pt-2">
               <Button
@@ -921,14 +838,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                             {movement.category}
                           </Badge>
 
-                          {movement.receiptUrl ? (
-                            <Badge variant="outline" className="text-xs">
-                              <Receipt className="w-3 h-3 mr-1" />
-                              Recibo
-                            </Badge>
-                          ) : null}
-                        </div>
-
                         <p className="text-sm mb-1 break-words font-medium">
                           {movement.description}
                         </p>
@@ -941,20 +850,6 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                           <CalendarIcon className="w-3 h-3" />
                           <span>{formatDate(movement.date)}</span>
                         </div>
-
-                        {movement.receiptUrl ? (
-                          <div className="mt-3">
-                            <a
-                              href={`http://localhost:4000${movement.receiptUrl}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center text-xs text-emerald-700 hover:underline"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Ver recibo
-                            </a>
-                          </div>
-                        ) : null}
                       </div>
 
                       <div className="text-right flex-shrink-0">
