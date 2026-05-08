@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useIsDesktop } from "../hooks/useIsDesktop";
 import { ExportManager } from "./ExportManager";
 import { apiFetch } from "../services/api";
-import { SecureImage } from "./ui/SecureImage";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent } from "./ui/card";
@@ -105,6 +104,16 @@ const outpostInfo = {
 
   const getInitials = (nombre: string, apellidos: string) => {
     return `${nombre?.charAt(0) || ""}${apellidos?.charAt(0) || ""}`.toUpperCase();
+  };
+
+  const AVATAR_COLORS = [
+    "#4f46e5", "#0891b2", "#059669", "#d97706",
+    "#dc2626", "#7c3aed", "#db2777", "#0284c7",
+  ];
+  
+  const getAvatarColor = (name = "") => {
+    const code = name.charCodeAt(0) || 0;
+    return AVATAR_COLORS[code % AVATAR_COLORS.length];
   };
 
   const getDocumentsStatus = (explorer: Explorer) => {
@@ -235,27 +244,19 @@ const outpostInfo = {
               >
                 <CardContent className="p-4">
                   <div className="mb-3 flex items-start space-x-3">
-                  {/* ── Foto de perfil con lazy loading seguro ────────────── */}
-                    {explorer.fotoUrl && explorer.fotoUrl.startsWith("club-timoteo/") ? (
-                      <SecureImage
-                        publicId={explorer.fotoUrl}
-                        explorerName={`${explorer.nombre} ${explorer.apellidos}`}
-                        size={56}
-                        className="flex-shrink-0"
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 56, height: 56, borderRadius: "50%",
-                          background: "#e2e8f0", display: "flex",
-                          alignItems: "center", justifyContent: "center",
-                          fontSize: 18, fontWeight: 700, color: "#64748b",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {getInitials(explorer.nombre, explorer.apellidos)}
-                      </div>
-                    )}
+                  {/* ── Avatar optimizado en lista (solo iniciales) ────────────── */}
+                    <div
+                      style={{
+                        width: 56, height: 56, borderRadius: "50%",
+                        background: getAvatarColor(`${explorer.nombre} ${explorer.apellidos}`),
+                        display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        fontSize: 18, fontWeight: 700, color: "#ffffff",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {getInitials(explorer.nombre, explorer.apellidos)}
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <p className="mb-1 truncate text-sm font-medium text-gray-900">
