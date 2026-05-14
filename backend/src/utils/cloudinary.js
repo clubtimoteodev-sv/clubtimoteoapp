@@ -132,7 +132,13 @@ export function generateSignedUrlThumb(publicId) {
  */
 export async function deleteExplorerPhoto(publicId) {
   ensureConfigured();
-  return cloudinary.uploader.destroy(publicId, {
+  
+  let cleanPublicId = publicId;
+  if (cleanPublicId && cleanPublicId.match(/^v\d+\//)) {
+    cleanPublicId = cleanPublicId.replace(/^v\d+\//, '');
+  }
+
+  return cloudinary.uploader.destroy(cleanPublicId, {
     type:       "authenticated",
     invalidate: true,
   });

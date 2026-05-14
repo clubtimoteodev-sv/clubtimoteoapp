@@ -96,10 +96,12 @@ router.post(
         explorer.id
       );
 
-      // Actualizar la URL en la DB (guardamos el public_id de Cloudinary)
+      // Actualizar la URL en la DB (guardamos el public_id de Cloudinary con su versión para cache busting)
+      const versionedPublicId = result.version ? `v${result.version}/${result.public_id}` : result.public_id;
+      
       const updated = await prisma.explorer.update({
         where: { id: explorer.id },
-        data:  { fotoUrl: result.public_id },
+        data:  { fotoUrl: versionedPublicId },
       });
 
       // ── Registro de auditoría ────────────────────────────────────────────────
@@ -111,7 +113,7 @@ router.post(
           method:   "POST",
           payload:  JSON.stringify({
             explorerId:      explorer.id,
-            publicId:        result.public_id,
+            publicId:        versionedPublicId,
             destacamentoCod: destacamento.codigo,
           }),
         },
@@ -119,9 +121,9 @@ router.post(
 
       res.json({
         ok:       true,
-        publicId: result.public_id,
+        publicId: versionedPublicId,
         // URL de vista previa por 10 min
-        signedUrl: generateSignedUrl(result.public_id),
+        signedUrl: generateSignedUrl(versionedPublicId),
       });
     } catch (err) {
       console.error("[photos] upload:", err);
@@ -139,14 +141,19 @@ router.get("/photo/:publicId(*)", canManagePhotos, async (req, res) => {
   try {
     const rawPublicId = req.params.publicId;
 
+    let cleanPublicId = rawPublicId;
+    if (cleanPublicId.match(/^v\d+\//)) {
+      cleanPublicId = cleanPublicId.replace(/^v\d+\//, '');
+    }
+
     // Validar que el publicId sigue el patrón de nuestro sistema
-    if (!rawPublicId.startsWith("club-timoteo/destacamentos/")) {
+    if (!cleanPublicId.startsWith("club-timoteo/destacamentos/")) {
       return res.status(400).json({ msg: "public_id inválido." });
     }
 
     // Extraer el código del destacamento del publicId para validar permisos
     // Formato: club-timoteo/destacamentos/{codigo}/perfiles/{explorerId}
-    const parts = rawPublicId.split("/");
+    const parts = cleanPublicId.split("/");
     if (parts.length < 5) return res.status(400).json({ msg: "public_id malformado." });
 
     const codigoDestacamento = parts[2];

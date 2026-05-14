@@ -491,7 +491,7 @@ export function ExplorerDetail({
             <div className="flex flex-col items-center text-center">
               {/* ── Foto de perfil segura (Cloudinary Signed URL) ─────────── */}
               <div className="relative mb-4">
-                {current.fotoUrl && current.fotoUrl.startsWith("club-timoteo/") ? (
+                {current.fotoUrl && current.fotoUrl.includes("club-timoteo/") ? (
                   <SecureImage
                     key={photoKey}
                     publicId={current.fotoUrl}
@@ -578,7 +578,7 @@ export function ExplorerDetail({
                   </label>
 
                   {/* Botón: Eliminar foto — solo si tiene foto Cloudinary */}
-                  {current.fotoUrl?.startsWith("club-timoteo/") && (
+                  {current.fotoUrl?.includes("club-timoteo/") && (
                     <button
                       type="button"
                       onClick={handleDeletePhoto}
