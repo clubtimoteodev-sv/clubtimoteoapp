@@ -90,8 +90,9 @@ export function generateSignedUrl(publicId) {
     type:       "authenticated",
     sign_url:   true,
     expires_at: expiresAt,
-    // Entrega optimizada para todos los navegadores
+    // Entrega optimizada usando el recorte eager (500x500)
     transformation: [
+      { width: 500, height: 500, crop: "fill", gravity: "face" },
       { fetch_format: "auto", quality: "auto" }
     ],
     secure: true,
