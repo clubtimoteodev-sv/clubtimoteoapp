@@ -568,7 +568,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                   className="h-11"
                 />
               </div>
-
+            </div>
 
             <div className="flex gap-3 pt-2">
               <Button
@@ -837,6 +837,7 @@ export function FinanceManager({ onBack }: FinanceManagerProps) {
                           <Badge variant="outline" className="text-xs">
                             {movement.category}
                           </Badge>
+                        </div>
 
                         <p className="text-sm mb-1 break-words font-medium">
                           {movement.description}

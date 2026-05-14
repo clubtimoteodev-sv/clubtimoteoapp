@@ -90,8 +90,8 @@ model Explorer {
   estudia                  Boolean
   nivelEducativo           String?
 
-  nombreResponsable        String
-  telefonoResponsable      String
+  nombreResponsable        String?
+  telefonoResponsable      String?
 
   aceptoCristo             Boolean
   bautizado                Boolean

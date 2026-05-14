@@ -285,6 +285,46 @@ export function ExplorerDetail({
     }
   };
 
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "recetaUrl" | "permisoUrl") => {
+    const file = e.target.files?.[0];
+    if (!file || !explorer) return;
+
+    setPhotoUploading(true);
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const API = import.meta.env.VITE_API_URL as string || "http://localhost:4000/api";
+      const res = await fetch(`${API}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Error al subir el documento");
+      }
+
+      const data = await res.json();
+      
+      // Update the explorer via API
+      await apiFetch(`/explorers/${explorer.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ [field]: data.url }),
+      });
+
+      setExplorer((prev) => prev ? { ...prev, [field]: data.url } : prev);
+      if (editForm) setEditForm((prev) => prev ? { ...prev, [field]: data.url } : prev);
+      toast.success("Documento subido correctamente ✓");
+    } catch (err: unknown) {
+      toast.error("Error al subir el documento");
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const handleEdit = () => {
     if (!explorer) return;
     setEditForm({ ...explorer });
@@ -1038,7 +1078,7 @@ export function ExplorerDetail({
                         Nombre del responsable
                       </p>
                       <p className="mt-1 text-sm text-gray-900">
-                        {current.nombreResponsable}
+                        {current.nombreResponsable || "No registrado"}
                       </p>
                     </div>
 
@@ -1049,7 +1089,7 @@ export function ExplorerDetail({
                         Teléfono del responsable
                       </p>
                       <p className="mt-1 text-sm text-gray-900">
-                        {current.telefonoResponsable}
+                        {current.telefonoResponsable || "No registrado"}
                       </p>
                     </div>
                   </>
@@ -1087,7 +1127,19 @@ export function ExplorerDetail({
                     </div>
                   </div>
 
-                  {recetaLink ? (
+                  {isEditing ? (
+                    <div className="flex flex-col items-end gap-1">
+                      {recetaLink && (
+                        <a href={recetaLink} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-gray-700 underline">
+                          Ver actual
+                        </a>
+                      )}
+                      <input type="file" id="recetaUpload" className="hidden" onChange={(e) => handleDocumentUpload(e, "recetaUrl")} accept="image/*,application/pdf" disabled={photoUploading} />
+                      <label htmlFor="recetaUpload" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700 cursor-pointer">
+                        {photoUploading ? "Subiendo..." : "Subir nuevo"}
+                      </label>
+                    </div>
+                  ) : recetaLink ? (
                     <a
                       href={recetaLink}
                       target="_blank"
@@ -1123,7 +1175,19 @@ export function ExplorerDetail({
                     </div>
                   </div>
 
-                  {permisoLink ? (
+                  {isEditing ? (
+                    <div className="flex flex-col items-end gap-1">
+                      {permisoLink && (
+                        <a href={permisoLink} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-gray-700 underline">
+                          Ver actual
+                        </a>
+                      )}
+                      <input type="file" id="permisoUpload" className="hidden" onChange={(e) => handleDocumentUpload(e, "permisoUrl")} accept="image/*,application/pdf" disabled={photoUploading} />
+                      <label htmlFor="permisoUpload" className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700 cursor-pointer">
+                        {photoUploading ? "Subiendo..." : "Subir nuevo"}
+                      </label>
+                    </div>
+                  ) : permisoLink ? (
                     <a
                       href={permisoLink}
                       target="_blank"

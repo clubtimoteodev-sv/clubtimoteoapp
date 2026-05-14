@@ -21,8 +21,8 @@ const createSchema = z.object({
   estudia: z.boolean(),
   nivelEducativo: z.string().optional().nullable(),
 
-  nombreResponsable: z.string().min(1),
-  telefonoResponsable: z.string().min(1),
+  nombreResponsable: z.string().optional().nullable(),
+  telefonoResponsable: z.string().optional().nullable(),
 
   aceptoCristo: z.boolean(),
   bautizado: z.boolean(),

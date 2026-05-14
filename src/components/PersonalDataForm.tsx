@@ -261,8 +261,8 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
       setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) { alert("No hay token. Inicia sesión otra vez."); return; }
-      const [fotoUrl, recetaUrl, permisoUrl] = await Promise.all([
-        photoFile ? uploadFile(photoFile, token) : null,
+      // Primero subir receta y permiso (que usan /upload y devuelven URL directa)
+      const [recetaUrl, permisoUrl] = await Promise.all([
         recetaFile ? uploadFile(recetaFile, token) : null,
         permisoFile ? uploadFile(permisoFile, token) : null,
       ]);
@@ -279,13 +279,25 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
         bautizado: formData.bautizado === "si",
         asisteCelula: formData.asisteCelula === "si",
         nombreLiderCelula: formData.asisteCelula === "si" ? formData.nombreLiderCelula || null : null,
-        fotoUrl, recetaUrl, permisoUrl,
+        recetaUrl, permisoUrl,
       };
       
-      await apiFetch("/explorers", {
+      const res = await apiFetch("/explorers", {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      
+      // Si se seleccionó foto de perfil, subirla usando el endpoint seguro
+      if (photoFile && res.id) {
+        const photoFd = new FormData();
+        photoFd.append("photo", photoFile);
+        const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+        await fetch(`${API}/explorers/${res.id}/photo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: photoFd,
+        });
+      }
       
       toast.success("Explorador guardado correctamente");
       setFormData({ codigoExplorador: "", nombre: "", apellidos: "", fechaNacimiento: "", direccion: "", telefono: "", alergias: "", medicinaControlada: "", estudia: "", nivelEducativo: "", nombreResponsable: "", telefonoResponsable: "", aceptoCristo: "", bautizado: "", asisteCelula: "", nombreLiderCelula: "" });
@@ -489,15 +501,15 @@ export function PersonalDataForm({ onBack }: PersonalDataFormProps) {
           </div>
           <div style={S.cardBody}>
             <div style={S.grid2}>
-              <Field label="Nombre del Responsable" required>
+              <Field label="Nombre del Responsable">
                 <input style={S.input} value={formData.nombreResponsable}
                   onChange={e => handle("nombreResponsable", e.target.value)}
-                  placeholder="Nombre completo" required />
+                  placeholder="Nombre completo" />
               </Field>
-              <Field label="Teléfono del Responsable" required>
+              <Field label="Teléfono del Responsable">
                 <input style={S.input} type="tel" value={formData.telefonoResponsable}
                   onChange={e => handle("telefonoResponsable", e.target.value)}
-                  placeholder="+503 0000-0000" required />
+                  placeholder="+503 0000-0000" />
               </Field>
             </div>
           </div>
