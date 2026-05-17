@@ -243,6 +243,11 @@ router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError || err.message?.includes("Tipo de archivo")) {
     return res.status(400).json({ msg: err.message });
   }
+  // "Request aborted" ocurre cuando el cliente cancela la conexión (ej: error previo
+  // en la misma petición). No es un fallo del servidor, se ignora silenciosamente.
+  if (err.message === "Request aborted") {
+    return res.headersSent ? undefined : res.status(499).end();
+  }
   console.error("[photos] unhandled:", err);
   res.status(500).json({ msg: "Error en el módulo de fotos." });
 });

@@ -102,10 +102,10 @@ router.post("/", requireNotTerritorial, async (req, res) => {
 
     res.status(201).json(explorer);
   } catch (error) {
-    console.error("Error creating explorer:", error);
     if (error.code === 'P2002') {
       return res.status(400).json({ msg: "El código interno ya existe en este destacamento" });
     }
+    console.error("Error creating explorer:", error);
     res.status(500).json({ msg: "Error interno del servidor" });
   }
 });
