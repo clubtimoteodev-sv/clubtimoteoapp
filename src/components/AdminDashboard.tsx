@@ -163,9 +163,10 @@ export default function AdminDashboard() {
         await apiFetch(`/admin/users/${editingUserId}`, { method: "PUT", body: formData });
         showToast("Usuario actualizado exitosamente");
       } else {
-        if (!formData.password) return showToast("La contraseña es requerida", false);
-        await apiFetch("/admin/users", { method: "POST", body: formData });
-        showToast("Usuario creado exitosamente");
+        // Al crear, el backend genera la contraseña automáticamente
+        const data = await apiFetch("/admin/users", { method: "POST", body: formData });
+        // Mostrar modal con la contraseña temporal para entregarla al líder
+        setResetPwdResult({ name: data.name, email: data.email, tempPwd: data.tempPassword });
       }
       setShowUserModal(false);
       setEditingUserId(null);
@@ -801,12 +802,6 @@ export default function AdminDashboard() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {!editingUserId && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Contraseña Inicial</label>
-                    <input required={!editingUserId} minLength={6} type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 font-mono bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Mín. 6 caracteres" />
-                  </div>
-                )}
                 <div className={editingUserId ? "col-span-2" : ""}>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Rol en Sistema</label>
                   <select required value={formData.role} onChange={e => setFormData({...formData, role: e.target.value, destacamentoId: "", territorioId: ""})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
@@ -814,6 +809,16 @@ export default function AdminDashboard() {
                     <option value="lider_territorial">Líder Territorial</option>
                   </select>
                 </div>
+                {!editingUserId && (
+                  <div className="col-span-2">
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <KeyRound size={16} className="text-blue-600 shrink-0" />
+                      <p className="text-xs text-blue-700">
+                        <strong>Contraseña automática:</strong> Se generará <span className="font-mono font-bold">Timoteo{new Date().getFullYear()}!</span> y el sistema te la mostrará al crear. El líder deberá cambiarla en su primer inicio de sesión.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Conditional fields based on role */}

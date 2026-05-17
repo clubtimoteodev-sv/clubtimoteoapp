@@ -47,9 +47,9 @@ router.get("/users", async (req, res) => {
 // ── POST /users — Crear usuario con cualquier rol ─────────────────────────────
 router.post("/users", async (req, res) => {
   try {
-    const { name, email, password, role, destacamentoId, territorioId } = req.body;
-    if (!name || !email || !password || !role)
-      return res.status(400).json({ msg: "name, email, password y role son requeridos" });
+    const { name, email, role, destacamentoId, territorioId } = req.body;
+    if (!name || !email || !role)
+      return res.status(400).json({ msg: "name, email y role son requeridos" });
 
     const VALID_ROLES = ["admin", "lider_territorial", "superadmin", "lider_destacamento"];
     if (!VALID_ROLES.includes(role))
@@ -58,11 +58,17 @@ router.post("/users", async (req, res) => {
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return res.status(409).json({ msg: "El email ya está en uso" });
 
-    const hash = await bcrypt.hash(password, 10);
+    // Generar contraseña temporal automáticamente
+    const tempPassword = `Timoteo${new Date().getFullYear()}!`;
+    const hash = await bcrypt.hash(tempPassword, 10);
+
     const user = await prisma.user.create({
-      data: { name, email, password: hash, role,
+      data: {
+        name, email, password: hash, role,
         destacamentoId: destacamentoId || null,
-        territorioId: territorioId || null },
+        territorioId: territorioId || null,
+        mustChangePassword: true   // Forzar cambio en primer login
+      },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
@@ -76,7 +82,9 @@ router.post("/users", async (req, res) => {
         }
       });
     } catch (auditErr) { console.error("[AuditLog]", auditErr); }
-    res.status(201).json(user);
+
+    // Devolver contraseña temporal para que el admin se la entregue al líder
+    res.status(201).json({ ...user, tempPassword });
   } catch (err) {
     console.error("admin/create-user:", err);
     res.status(500).json({ msg: "Error al crear usuario" });
