@@ -58,8 +58,8 @@ router.post("/users", async (req, res) => {
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return res.status(409).json({ msg: "El email ya está en uso" });
 
-    // Generar contraseña temporal automáticamente
-    const tempPassword = `Timoteo${new Date().getFullYear()}!`;
+    // Generar contraseña temporal única y aleatoria
+    const tempPassword = `Timoteo${Math.floor(1000 + Math.random() * 9000)}!`;
     const hash = await bcrypt.hash(tempPassword, 10);
 
     const user = await prisma.user.create({
@@ -122,8 +122,8 @@ router.post("/users/:id/reset-password", async (req, res) => {
     const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true, name: true } });
     if (!target) return res.status(404).json({ msg: "Usuario no encontrado." });
 
-    // Contraseña temporal segura y memorable
-    const tempPassword = `Timoteo${new Date().getFullYear()}!`;
+    // Contraseña temporal única y aleatoria
+    const tempPassword = `Timoteo${Math.floor(1000 + Math.random() * 9000)}!`;
 
     const hash = await bcrypt.hash(tempPassword, 10);
     await prisma.user.update({

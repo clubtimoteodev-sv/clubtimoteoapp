@@ -166,7 +166,7 @@ export default function AdminDashboard() {
         // Al crear, el backend genera la contraseña automáticamente
         const data = await apiFetch("/admin/users", { method: "POST", body: formData });
         // Mostrar modal con la contraseña temporal para entregarla al líder
-        setResetPwdResult({ name: data.name, email: data.email, tempPwd: data.tempPassword });
+        setResetPwdResult({ name: data.name, email: data.email, tempPwd: data.tempPassword, isNew: true });
       }
       setShowUserModal(false);
       setEditingUserId(null);
@@ -230,7 +230,7 @@ export default function AdminDashboard() {
   };
 
   // Contraseña temporal generada
-  const [resetPwdResult, setResetPwdResult] = useState<{ name: string; email: string; tempPwd: string } | null>(null);
+  const [resetPwdResult, setResetPwdResult] = useState<{ name: string; email: string; tempPwd: string; isNew?: boolean } | null>(null);
 
   const handleResetPassword = async (id: string, name: string) => {
     if (!window.confirm(`¿Seguro que deseas resetear la contraseña de ${name}? Se generará una contraseña temporal segura.`)) return;
@@ -814,7 +814,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <KeyRound size={16} className="text-blue-600 shrink-0" />
                       <p className="text-xs text-blue-700">
-                        <strong>Contraseña automática:</strong> Se generará <span className="font-mono font-bold">Timoteo{new Date().getFullYear()}!</span> y el sistema te la mostrará al crear. El líder deberá cambiarla en su primer inicio de sesión.
+                        <strong>Contraseña automática:</strong> Se generará una contraseña temporal única. Al guardar te la mostraremos para que se la entregues al líder.
                       </p>
                     </div>
                   </div>
@@ -923,22 +923,23 @@ export default function AdminDashboard() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">¡Contraseña reseteada!</h2>
-            <p className="text-sm text-gray-600 mb-6">
-              La contraseña temporal para <strong>{resetPwdResult.name}</strong> ({resetPwdResult.email}) ha sido generada exitosamente.
-            </p>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">
+              {resetPwdResult.isNew ? "¡Usuario creado!" : "¡Contraseña reseteada!"}
+            </h2>
             
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Contraseña Temporal</p>
-              <div className="flex items-center justify-center gap-2">
-                <span className="font-mono text-xl font-bold text-gray-900 tracking-wider">
-                  {resetPwdResult.tempPwd}
-                </span>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 text-left space-y-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Correo</p>
+                <p className="font-mono text-sm font-semibold text-gray-900">{resetPwdResult.email}</p>
+              </div>
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Contraseña Temporal</p>
+                <p className="font-mono text-xl font-bold text-gray-900 tracking-wider">{resetPwdResult.tempPwd}</p>
               </div>
             </div>
 
             <p className="text-xs text-red-600 font-medium bg-red-50 p-2 rounded mb-6">
-              Guarda esta contraseña ahora. El usuario deberá cambiarla obligatoriamente al iniciar sesión.
+              Guarda esta información ahora. El usuario deberá cambiar su contraseña obligatoriamente al iniciar sesión.
             </p>
 
             <button onClick={() => setResetPwdResult(null)} className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all">
