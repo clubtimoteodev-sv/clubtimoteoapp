@@ -3044,3 +3044,111 @@ html {
   }
 }
 
+
+/* ================================================
+   @media print — Impresión en blanco y negro
+   Aplica a todos los reportes: Asistencia,
+   Regional, Comparación, Finanzas, etc.
+   ================================================ */
+@media print {
+
+  /* ── 1. Configuración de página ── */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 1.2cm;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  /* ── 2. Ocultar navegación y controles de UI ── */
+  aside,
+  nav,
+  header button,
+  header [role="button"],
+  .no-print {
+    display: none !important;
+  }
+
+  header {
+    position: static !important;
+    box-shadow: none !important;
+    background: white !important;
+    border-bottom: 1px solid #999 !important;
+  }
+
+  [data-sonner-toaster],
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* ── 3. Layout de impresión ── */
+  main {
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Evitar cortes de tarjeta entre páginas */
+  [style*="border-radius"],
+  [class*="card"],
+  [class*="Card"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ── 4. Fondos de color → blanco ── */
+  * {
+    background-color: white !important;
+    box-shadow: none !important;
+  }
+
+  /* ── 5. Texto → negro / gris oscuro ── */
+  p, span, div, td, th, li,
+  h1, h2, h3, h4, h5, h6 {
+    color: #111 !important;
+  }
+
+  /* ── 6. Bordes → grises ── */
+  [style*="border"],
+  [class*="border"] {
+    border-color: #bbb !important;
+  }
+
+  /* Acento lateral izquierdo de tarjetas de reunión */
+  [style*="border-left"] {
+    border-left-color: #888 !important;
+    border-left-width: 3px !important;
+  }
+
+  /* ── 7. Badges / Pills → borde gris, texto negro ── */
+  span[style*="background-color"],
+  [class*="badge"],
+  [class*="Badge"] {
+    background-color: white !important;
+    border: 1px solid #666 !important;
+    color: #111 !important;
+  }
+
+  /* ── 8. Avatares circulares → ocultar ── */
+  div[style*="border-radius: 50%"],
+  img[style*="border-radius: 50%"] {
+    display: none !important;
+  }
+
+  /* ── 9. Separadores ── */
+  hr,
+  [class*="separator"],
+  [class*="Separator"] {
+    border-color: #ccc !important;
+  }
+
+  /* ── 10. Números grandes (stats) ── */
+  [style*="font-size: 1.5rem"],
+  [style*="font-size: 1.25rem"] {
+    color: #000 !important;
+  }
+}
