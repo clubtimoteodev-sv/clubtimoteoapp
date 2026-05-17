@@ -168,9 +168,17 @@ export function ExplorerDetail({
     }
   }
 
+  // Parsea una fecha ISO ("2001-05-01" o "2001-05-01T...") como fecha LOCAL
+  // para evitar el desfase de zona horaria (UTC-6 en El Salvador).
+  const parseLocalDate = (dateString: string): Date => {
+    const part = dateString.slice(0, 10); // "YYYY-MM-DD"
+    const [year, month, day] = part.split("-").map(Number);
+    return new Date(year, month - 1, day); // mes es 0-indexado
+  };
+
   const calculateAge = (birthDate: string) => {
     const today = new Date();
-    const birth = new Date(birthDate);
+    const birth = parseLocalDate(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
 
@@ -184,7 +192,7 @@ export function ExplorerDetail({
   const formatDate = (dateString: string) => {
     if (!dateString) return "Sin fecha";
 
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
     if (Number.isNaN(date.getTime())) return "Sin fecha válida";
 
     return date.toLocaleDateString("es-SV", {
@@ -211,11 +219,9 @@ export function ExplorerDetail({
 
   const formatDateInputValue = (dateString?: string | null) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) {
-      return dateString.slice(0, 10);
-    }
-    return date.toISOString().split("T")[0];
+    // Tomar solo la parte YYYY-MM-DD directamente del string
+    // para evitar conversión UTC que desplaza el día en zonas UTC-
+    return dateString.slice(0, 10);
   };
 
   const getInitials = (nombre: string, apellidos: string) => {
